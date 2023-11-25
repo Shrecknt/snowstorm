@@ -17,7 +17,7 @@ impl DatabaseConnection {
         Ok(Self { pool, cursor: None })
     }
 
-    pub async fn get_rescan(&self) -> Result<Vec<(Ipv4Addr, u16)>, eyre::Report> {
+    pub async fn get_rescan(&self) -> eyre::Result<Vec<(Ipv4Addr, u16)>> {
         let res = sqlx::query("SELECT id FROM servers")
             .fetch_all(&self.pool)
             .await?;

@@ -9,13 +9,13 @@ pub trait Io {
         &self,
         addr: Ipv4Addr,
         port: u16,
-    ) -> impl std::future::Future<Output = Result<(), eyre::Report>> + Send;
+    ) -> impl std::future::Future<Output = eyre::Result<()>> + Send;
 
     fn legacy_ping(
         &self,
         addr: Ipv4Addr,
         port: u16,
-    ) -> impl std::future::Future<Output = Result<(), eyre::Report>> + Send;
+    ) -> impl std::future::Future<Output = eyre::Result<()>> + Send;
 }
 
 #[derive(Debug)]

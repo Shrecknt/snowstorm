@@ -5,6 +5,6 @@ pub async fn range_top<T: Io>(
     pinger: &T,
     cursor: &mut u32,
     range: Ipv4AddrRange,
-) -> Result<(), eyre::Report> {
+) -> eyre::Result<()> {
     todo!()
 }

@@ -5,7 +5,7 @@ pub async fn rescan<T: Io>(
     pinger: &T,
     cursor: &mut usize,
     ips: Vec<(Ipv4Addr, u16)>,
-) -> Result<(), eyre::Report> {
+) -> eyre::Result<()> {
     if *cursor >= ips.len() {
         *cursor = 0;
         // I know this looks dumb, but if

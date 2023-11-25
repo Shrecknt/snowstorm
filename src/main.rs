@@ -11,7 +11,7 @@ use std::{
 use tokio::sync::Mutex;
 
 #[tokio::main]
-async fn main() -> Result<(), eyre::Report> {
+async fn main() -> eyre::Result<()> {
     dotenv::dotenv()?;
 
     let db = DatabaseConnection::new().await?;
@@ -39,7 +39,7 @@ async fn ping_loop<T: Io>(
     db: DatabaseConnection,
     state: Arc<Mutex<ScannerState>>,
     pinger: T,
-) -> Result<(), eyre::Report> {
+) -> eyre::Result<()> {
     let mut cursors = ModeCursors::new();
 
     let mut time = Instant::now();
