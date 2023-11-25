@@ -1,0 +1,63 @@
+use crate::addr_range::Ipv4AddrRange;
+use lazy_static::lazy_static;
+use perfect_rand::PerfectRng;
+use std::{net::Ipv4Addr, ops::Range};
+
+mod all_ports;
+mod discovery;
+mod discovery_top;
+mod range;
+mod range_top;
+mod rescan;
+
+pub use all_ports::all_ports;
+pub use discovery::discovery;
+pub use discovery_top::discovery_top;
+pub use range::range;
+pub use range_top::range_top;
+pub use rescan::rescan;
+
+pub const PORTS_RANGE: Range<u16> = 1000..65535;
+
+lazy_static! {
+    pub static ref RANDOMIZER: PerfectRng = PerfectRng::new(2u64.pow(32), 0xda0d71bc391d3c92, 3);
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum ScanningMode {
+    /// Ping port 25565 on all allowed IPs
+    Discovery,
+    /// Ping top 8 common ports on all allowed IPs
+    DiscoveryTopPorts,
+    /// Ping port 25565 on all IPs in a given range
+    Range(Ipv4AddrRange),
+    /// Ping top 8 common ports on all IPs in a given range
+    RangeTopPorts(Ipv4AddrRange),
+    /// Ping all allowed ports on a single IP
+    AllPorts(Ipv4Addr),
+    /// Ping all servers in the database
+    Rescan(Vec<(Ipv4Addr, u16)>),
+}
+
+#[derive(Debug)]
+pub struct ModeCursors {
+    pub discovery: u32,
+    pub discovery_top_ports: u32,
+    pub range: u32,
+    pub range_top_ports: u32,
+    pub all_ports: u32,
+    pub rescan: usize,
+}
+
+impl ModeCursors {
+    pub fn new() -> Self {
+        Self {
+            discovery: 0,
+            discovery_top_ports: 0,
+            range: 0,
+            range_top_ports: 0,
+            all_ports: 0,
+            rescan: 0,
+        }
+    }
+}
