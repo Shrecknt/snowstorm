@@ -1,6 +1,22 @@
-use crate::{addr_range::Ipv4AddrRange, io::Io};
+use std::net::Ipv4Addr;
+
+use crate::{addr_range::Ipv4AddrRange, exclude, io::Io};
 
 #[allow(unused)]
 pub async fn range<T: Io>(pinger: &T, cursor: &mut u32, range: Ipv4AddrRange) -> eyre::Result<()> {
-    todo!()
+    let mut ip = Ipv4Addr::from(*cursor);
+
+    if !range.contains(ip) {
+        *cursor = u32::from(range.first);
+        return Ok(());
+    }
+    if !exclude::is_allowed(ip) {
+        *cursor += 1;
+        return Ok(());
+    }
+
+    pinger.ping(ip, 25565).await?;
+    *cursor += 1;
+
+    Ok(())
 }

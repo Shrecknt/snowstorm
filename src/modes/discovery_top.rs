@@ -1,4 +1,4 @@
-use super::{PORTS_RANGE, RANDOMIZER};
+use super::{RANDOMIZER, TOP_PORTS};
 use crate::{exclude, io::Io};
 use std::net::Ipv4Addr;
 
@@ -11,7 +11,7 @@ pub async fn discovery_top<T: Io>(pinger: &T, cursor: &mut u32) -> eyre::Result<
             break;
         }
     }
-    for port in PORTS_RANGE {
+    for port in TOP_PORTS {
         pinger.ping(ip, port).await?;
     }
     Ok(())

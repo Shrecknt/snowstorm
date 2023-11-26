@@ -10,6 +10,10 @@ impl Ipv4AddrRange {
     pub fn new(first: Ipv4Addr, last: Ipv4Addr) -> Self {
         Self { first, last }
     }
+
+    pub fn contains(&self, ip: Ipv4Addr) -> bool {
+        ip >= self.first && ip <= self.last
+    }
 }
 
 impl FromStr for Ipv4AddrRange {

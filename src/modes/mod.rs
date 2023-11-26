@@ -18,6 +18,7 @@ pub use range_top::range_top;
 pub use rescan::rescan;
 
 pub const PORTS_RANGE: Range<u16> = 1000..65535;
+pub const TOP_PORTS: [u16; 5] = [25565, 25566, 25567, 25570, 25575];
 
 lazy_static! {
     pub static ref RANDOMIZER: PerfectRng = PerfectRng::new(2u64.pow(32), 0xda0d71bc391d3c92, 3);
