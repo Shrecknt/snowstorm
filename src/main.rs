@@ -2,9 +2,10 @@ use snowstorm::{
     database::DatabaseConnection,
     io::{database::DatabaseScanner, Io},
     modes::{self, ModeCursors, ScanningMode},
-    ScannerState,
+    web, ScannerState,
 };
 use std::{
+    collections::LinkedList,
     sync::{mpsc::channel, Arc},
     time::{Duration, Instant},
 };
@@ -14,19 +15,34 @@ use tokio::sync::Mutex;
 async fn main() -> eyre::Result<()> {
     dotenv::dotenv()?;
 
-    let db = DatabaseConnection::new().await?;
+    let db = Arc::new(Mutex::new(DatabaseConnection::new().await?));
     let state = Arc::new(Mutex::new(ScannerState::default()));
     let (ping_results_sender, ping_results) = channel();
+    let task_queue = Arc::new(Mutex::new(LinkedList::new()));
     let pinger = DatabaseScanner::new(state.clone(), ping_results_sender);
 
     // println!("data: {:?}", pinger.data);
 
-    let rescan = db.get_rescan().await?;
+    let rescan = db.lock().await.get_rescan().await?;
     println!("rows = {:?}", rescan);
 
-    tokio::spawn(async move {
-        ping_loop(db, state.clone(), pinger).await.unwrap();
-    });
+    {
+        let db = db.clone();
+        let state = state.clone();
+        let task_queue = task_queue.clone();
+        tokio::spawn(async move {
+            ping_loop(db, state, task_queue, pinger).await.unwrap();
+        });
+    }
+
+    {
+        let db = db.clone();
+        let state = state.clone();
+        let task_queue = task_queue.clone();
+        tokio::spawn(async move {
+            web::start_server(db, state, task_queue).await.unwrap();
+        });
+    }
 
     for (result, _players) in ping_results {
         println!("{}:{}", result.ip, result.port);
@@ -36,8 +52,9 @@ async fn main() -> eyre::Result<()> {
 }
 
 async fn ping_loop<T: Io>(
-    db: DatabaseConnection,
+    db: Arc<Mutex<DatabaseConnection>>,
     state: Arc<Mutex<ScannerState>>,
+    task_queue: Arc<Mutex<LinkedList<ScanningMode>>>,
     pinger: T,
 ) -> eyre::Result<()> {
     let mut cursors = ModeCursors::new();
@@ -54,11 +71,13 @@ async fn ping_loop<T: Io>(
                 state.mode, state.discovered
             );
             state.discovered = 0;
-            if let ScanningMode::Rescan(..) = state.mode {
+            if let Some(mode) = task_queue.lock().await.pop_front() {
+                state.mode = mode;
+            } else if let ScanningMode::Rescan(..) = state.mode {
                 // TODO decide on the best scanning mode to use
                 state.mode = ScanningMode::Discovery;
             } else {
-                let rescan_data = db.get_rescan().await.unwrap();
+                let rescan_data = db.lock().await.get_rescan().await.unwrap();
                 state.mode = ScanningMode::Rescan(rescan_data);
             }
         }

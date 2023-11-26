@@ -5,6 +5,7 @@ pub mod database;
 pub mod exclude;
 pub mod io;
 pub mod modes;
+pub mod web;
 
 pub struct ScannerState {
     pub mode: ScanningMode,
