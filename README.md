@@ -8,10 +8,10 @@ mass surveillance for block game
 
 Scan the entire ipv4 address space for Minecraft servers, with dynamic scanning to find servers on non-default ports.
 
-> [!IMPORTANT]
-> The scanner is currently very early in development and is missing many features
-> The current version of the scanner does not ping real servers, it only pulls data from csv files
-> The scanner also does not save any results to the database
+> **Important**
+> The scanner is currently very early in development and is missing many features.
+> The current version of the scanner does not ping real servers, it only pulls data from csv files.
+> The scanner also does not save any results to the database.
 
 ## Prerequisites
 
