@@ -18,7 +18,7 @@ impl DatabaseScanner {
         state: Arc<Mutex<ScannerState>>,
         sender: Sender<(PingResult, Vec<PlayerInfo>)>,
     ) -> Self {
-        let data = csv::Reader::from_path("data/souper.csv")
+        let data = csv::Reader::from_path(std::env::var("TESTING_DATA").unwrap())
             .unwrap()
             .records()
             .map(|item| {
