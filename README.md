@@ -9,13 +9,18 @@ mass surveillance for block game
 Scan the entire ipv4 address space for Minecraft servers, with dynamic scanning to find servers on non-default ports.
 
 > **Important**
-> The scanner is currently very early in development and is missing many features.
-> The current version of the scanner does not ping real servers, it only pulls data from csv files.
-> The scanner also does not save any results to the database.
+> - The scanner is currently very early in development and is missing many features
+> - The current version of the scanner does not ping real servers, it only pulls data from csv files
+> - The scanner also does not save any results to the database
 
 ## Prerequisites
 
-Snowstorm requires the latest stable version of rust, as well as a postgres database. The postgres database can be run on a different server from the scanner.
+- Rust 1.76.0-nightly
+- Node.js 21.2.0
+- npm 10.2.0
+- A postgres database - can be run on a different server
+
+Other versions of some of the listed programs will probably work but it is not recommended. Rust must be nightly as this program uses async traits which are not in the current latest stable release.
 
 ## Installation
 
