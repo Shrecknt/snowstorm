@@ -26,6 +26,8 @@ lazy_static! {
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum ScanningMode {
+    /// Don't ping any servers - This can be enabled from the web ui
+    Paused,
     /// Ping port 25565 on all allowed IPs
     Discovery,
     /// Ping top 8 common ports on all allowed IPs

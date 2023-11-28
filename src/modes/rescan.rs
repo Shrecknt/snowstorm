@@ -4,7 +4,7 @@ use std::net::Ipv4Addr;
 pub async fn rescan<T: Io>(
     pinger: &T,
     cursor: &mut usize,
-    ips: Vec<(Ipv4Addr, u16)>,
+    ips: &Vec<(Ipv4Addr, u16)>,
 ) -> eyre::Result<()> {
     if *cursor >= ips.len() {
         *cursor = 0;

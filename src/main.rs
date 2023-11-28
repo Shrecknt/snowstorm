@@ -54,54 +54,60 @@ async fn main() -> eyre::Result<()> {
 async fn ping_loop<T: Io>(
     db: Arc<Mutex<DatabaseConnection>>,
     state: Arc<Mutex<ScannerState>>,
-    task_queue: Arc<Mutex<LinkedList<ScanningMode>>>,
+    task_queue: Arc<Mutex<LinkedList<(ScanningMode, Duration)>>>,
     pinger: T,
 ) -> eyre::Result<()> {
     let mut cursors = ModeCursors::new();
+    let mut mode = ScanningMode::Paused;
+    let mut current_mode_duration = Duration::MAX;
 
     let mut time = Instant::now();
     loop {
-        let mut state = state.lock().await;
-
         let now = Instant::now();
-        if now - time > Duration::from_millis(1000) {
+        if now - time > current_mode_duration {
             time = now;
+
+            let mut state = state.lock().await;
+
             println!(
                 "Servers found for ScanningMode::{:?}: {}",
-                state.mode, state.discovered
+                mode, state.discovered
             );
             state.discovered = 0;
-            if let Some(mode) = task_queue.lock().await.pop_front() {
-                state.mode = mode;
-            } else if let ScanningMode::Rescan(..) = state.mode {
+
+            drop(state); // prevent deadlock
+
+            current_mode_duration = Duration::from_millis(1000);
+            if let Some((new_mode, duration)) = task_queue.lock().await.pop_front() {
+                mode = new_mode;
+                current_mode_duration = duration;
+            } else if let ScanningMode::Rescan(..) = mode {
                 // TODO decide on the best scanning mode to use
-                state.mode = ScanningMode::Discovery;
+                mode = ScanningMode::Discovery;
             } else {
                 let rescan_data = db.lock().await.get_rescan().await.unwrap();
-                state.mode = ScanningMode::Rescan(rescan_data);
+                mode = ScanningMode::Rescan(rescan_data);
             }
         }
 
-        let mode = state.mode.clone();
-        drop(state); // prevent deadlock
-
         match mode {
+            ScanningMode::Paused => {}
             ScanningMode::Discovery => {
                 modes::discovery(&pinger, &mut cursors.discovery).await?;
             }
             ScanningMode::DiscoveryTopPorts => {
                 modes::discovery_top(&pinger, &mut cursors.discovery_top_ports).await?;
             }
-            ScanningMode::Range(range) => {
+            ScanningMode::Range(ref range) => {
                 modes::range(&pinger, &mut cursors.range, range).await?;
             }
-            ScanningMode::RangeTopPorts(range) => {
+            ScanningMode::RangeTopPorts(ref range) => {
                 modes::range_top(&pinger, &mut cursors.range_top_ports, range).await?;
             }
             ScanningMode::AllPorts(ip) => {
                 modes::all_ports(&pinger, &mut cursors.all_ports, ip).await?;
             }
-            ScanningMode::Rescan(ips) => {
+            ScanningMode::Rescan(ref ips) => {
                 modes::rescan(&pinger, &mut cursors.rescan, ips).await?;
             }
         }

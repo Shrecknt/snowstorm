@@ -2,26 +2,26 @@ use crate::{database::DatabaseConnection, modes::ScanningMode, ScannerState};
 use axum::{
     body::Body,
     extract::State,
-    http::{Request, StatusCode},
-    response::IntoResponse,
+    http::Request,
+    response::{Html, IntoResponse},
     routing::{get, post},
     Json, Router,
 };
 use serde::Deserialize;
-use std::{collections::LinkedList, net::SocketAddr, str::FromStr, sync::Arc};
+use std::{collections::LinkedList, net::SocketAddr, str::FromStr, sync::Arc, time::Duration};
 use tokio::sync::Mutex;
 
 #[derive(Clone)]
 pub struct ServerState {
     pub db: Arc<Mutex<DatabaseConnection>>,
     pub state: Arc<Mutex<ScannerState>>,
-    pub task_queue: Arc<Mutex<LinkedList<ScanningMode>>>,
+    pub task_queue: Arc<Mutex<LinkedList<(ScanningMode, Duration)>>>,
 }
 
 pub async fn start_server(
     db: Arc<Mutex<DatabaseConnection>>,
     state: Arc<Mutex<ScannerState>>,
-    task_queue: Arc<Mutex<LinkedList<ScanningMode>>>,
+    task_queue: Arc<Mutex<LinkedList<(ScanningMode, Duration)>>>,
 ) -> eyre::Result<()> {
     let server_state = ServerState {
         db,
@@ -31,7 +31,8 @@ pub async fn start_server(
 
     let routes = Router::new()
         .route("/", get(root))
-        .route("/auth", post(authentication));
+        .route("/auth", post(authentication))
+        .fallback(handler_404);
     let routes = routes.with_state(server_state);
 
     let listener = SocketAddr::from_str(&std::env::var("WEB_LISTEN_URL")?)?;
@@ -45,7 +46,7 @@ pub async fn start_server(
 
 #[axum::debug_handler]
 #[allow(clippy::unused_async, unused)]
-async fn root(server_state: State<ServerState>, req: Request<Body>) -> impl IntoResponse {
+async fn root(server_state: State<ServerState>, req: Request<Body>) -> String {
     format!("req = {req:?}")
 }
 
@@ -65,9 +66,6 @@ async fn authentication(
 }
 
 #[allow(clippy::unused_async, unused)]
-async fn handle_error() -> (StatusCode, &'static str) {
-    (
-        StatusCode::INTERNAL_SERVER_ERROR,
-        "Something went wrong accessing static files...",
-    )
+async fn handler_404(req: Request<Body>) -> Html<&'static str> {
+    Html("<h1>404 Error</h1>")
 }

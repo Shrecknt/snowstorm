@@ -6,7 +6,7 @@ use std::net::Ipv4Addr;
 pub async fn range_top<T: Io>(
     pinger: &T,
     cursor: &mut u32,
-    range: Ipv4AddrRange,
+    range: &Ipv4AddrRange,
 ) -> eyre::Result<()> {
     let mut ip = Ipv4Addr::from(*cursor);
 
