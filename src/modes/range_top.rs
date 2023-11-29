@@ -1,5 +1,8 @@
 use super::TOP_PORTS;
-use crate::{addr_range::Ipv4AddrRange, exclude, io::Io};
+use crate::{
+    io::Io,
+    util::{addr_range::Ipv4AddrRange, exclude},
+};
 use std::net::Ipv4Addr;
 
 #[allow(unused)]

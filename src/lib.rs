@@ -1,8 +1,7 @@
-pub mod addr_range;
 pub mod database;
-pub mod exclude;
 pub mod io;
 pub mod modes;
+pub mod util;
 pub mod web;
 
 pub struct ScannerState {

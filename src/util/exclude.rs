@@ -1,7 +1,7 @@
 use lazy_static::lazy_static;
 use std::{cmp::Ordering, collections::BTreeSet, fs, net::Ipv4Addr};
 
-use crate::addr_range::Ipv4AddrRange;
+use crate::util::addr_range::Ipv4AddrRange;
 
 lazy_static! {
     static ref EXCLUDE_LIST: BTreeSet<ExcludeEntry> = {

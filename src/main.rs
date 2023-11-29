@@ -44,8 +44,11 @@ async fn main() -> eyre::Result<()> {
         });
     }
 
-    for (result, _players) in ping_results {
-        println!("{}:{}", result.ip, result.port);
+    for (result, players) in ping_results {
+        println!(
+            "{{ ip = '{}:{}', players = '{:?}' }}",
+            result.ip, result.port, players
+        );
     }
 
     Ok(())

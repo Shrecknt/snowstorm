@@ -1,4 +1,4 @@
-use crate::{exclude, io::Io};
+use crate::{io::Io, util::exclude};
 use std::net::Ipv4Addr;
 
 pub async fn rescan<T: Io>(

@@ -1,4 +1,4 @@
-use crate::addr_range::Ipv4AddrRange;
+use crate::util::addr_range::Ipv4AddrRange;
 use lazy_static::lazy_static;
 use perfect_rand::PerfectRng;
 use std::{net::Ipv4Addr, ops::Range};

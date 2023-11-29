@@ -49,7 +49,30 @@ impl PingResult {
     }
 }
 
+#[derive(Debug, Clone, PartialEq)]
 pub struct PlayerInfo {
     pub name: String,
     pub uuid: Uuid,
+}
+
+impl PlayerInfo {
+    pub fn new(name: String, uuid: Uuid) -> Self {
+        Self { name, uuid }
+    }
+
+    pub fn from_username(name: String) -> Self {
+        #[allow(unreachable_code)]
+        Self {
+            name,
+            uuid: todo!(),
+        }
+    }
+
+    pub fn from_uuid(uuid: Uuid) -> Self {
+        #[allow(unreachable_code)]
+        Self {
+            uuid,
+            name: todo!(),
+        }
+    }
 }

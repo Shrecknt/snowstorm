@@ -1,6 +1,9 @@
 use std::net::Ipv4Addr;
 
-use crate::{addr_range::Ipv4AddrRange, exclude, io::Io};
+use crate::{
+    io::Io,
+    util::{addr_range::Ipv4AddrRange, exclude},
+};
 
 #[allow(unused)]
 pub async fn range<T: Io>(pinger: &T, cursor: &mut u32, range: &Ipv4AddrRange) -> eyre::Result<()> {

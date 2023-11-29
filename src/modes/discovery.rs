@@ -1,5 +1,5 @@
 use super::RANDOMIZER;
-use crate::{exclude, io::Io};
+use crate::{io::Io, util::exclude};
 use std::net::Ipv4Addr;
 
 pub async fn discovery<T: Io>(pinger: &T, cursor: &mut u32) -> eyre::Result<()> {
