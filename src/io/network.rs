@@ -18,6 +18,11 @@ impl NetworkScanner {
     ) -> Self {
         let res = Self { state, sender };
 
+        // TODO: use pnet to listen for pings
+        res.sender
+            .send((PingResult::none(Ipv4Addr::from(0), 0), vec![]))
+            .expect("Unable to send");
+
         res
     }
 }

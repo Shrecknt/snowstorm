@@ -1,23 +1,23 @@
 use crate::{database::DatabaseConnection, modes::ScanningMode, ScannerState};
 use axum::{
-    body::Body,
     extract::{
         ws::{Message, WebSocket},
         ConnectInfo, State, WebSocketUpgrade,
     },
     headers,
-    http::Request,
-    response::{Html, IntoResponse},
+    response::IntoResponse,
     routing::{get, post},
     Json, Router, TypedHeader,
 };
 use serde::Deserialize;
+use simd_json::owned::Value;
+use sqlx::PgPool;
 use std::{collections::LinkedList, net::SocketAddr, str::FromStr, sync::Arc, time::Duration};
-use tokio::sync::Mutex;
-use tower_http::{
-    services::{ServeDir, ServeFile},
-    trace::{DefaultMakeSpan, TraceLayer},
-};
+use tokio::sync::{Mutex, MutexGuard};
+use tower_http::services::{ServeDir, ServeFile};
+#[cfg(debug_assertions)]
+use tower_http::trace::{DefaultMakeSpan, TraceLayer};
+#[cfg(debug_assertions)]
 use tracing_subscriber::prelude::*;
 
 #[derive(Clone)]
@@ -32,6 +32,7 @@ pub async fn start_server(
     state: Arc<Mutex<ScannerState>>,
     task_queue: Arc<Mutex<LinkedList<(ScanningMode, Duration)>>>,
 ) -> eyre::Result<()> {
+    #[cfg(debug_assertions)]
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::EnvFilter::try_from_default_env()
@@ -49,19 +50,17 @@ pub async fn start_server(
     let serve_dir = ServeDir::new("web").not_found_service(ServeFile::new("web/404.html"));
 
     let routes = Router::new()
-        .nest_service("/", serve_dir.clone())
         .route("/ws", get(ws_handler))
         .route("/auth", post(authentication))
-        .layer(
-            TraceLayer::new_for_http()
-                .make_span_with(DefaultMakeSpan::default().include_headers(true)),
-        )
-        .fallback(handler_404); // this fallback shouldn't be necessary but it doesn't hurt to be extra safe
+        .fallback_service(serve_dir.clone());
+    let routes = routes.layer(
+        TraceLayer::new_for_http().make_span_with(DefaultMakeSpan::default().include_headers(true)),
+    );
     let routes = routes.with_state(server_state);
 
     let listener = SocketAddr::from_str(&std::env::var("WEB_LISTEN_URL")?)?;
     axum::Server::bind(&listener)
-        .serve(routes.into_make_service())
+        .serve(routes.into_make_service_with_connect_info::<SocketAddr>())
         .await?;
 
     Ok(())
@@ -83,27 +82,61 @@ async fn ws_handler(
 }
 
 async fn handle_socket(mut socket: WebSocket, who: SocketAddr) {
-    if socket.send(Message::Ping(vec![1, 2, 3])).await.is_ok() {
-        println!("pong :3");
+    let _ = socket.send(Message::Ping(vec![1, 2, 3])).await;
+
+    while let Some(message) = socket.recv().await {
+        match message {
+            Ok(message) => {
+                let text = match &message {
+                    Message::Text(text) => text.trim(),
+                    Message::Close(_) => break,
+                    _ => {
+                        println!("non-text message: {:?}", message);
+                        continue;
+                    }
+                };
+                if text.is_empty() {
+                    continue;
+                }
+                println!("len: '{}', bytes: '{:?}'", text.len(), text.as_bytes());
+                println!("message: '{}'", text);
+
+                let json: Value = match simd_json::deserialize(&mut text.as_bytes().to_owned()) {
+                    Ok(json) => json,
+                    Err(err) => {
+                        let _ = socket
+                            .send(Message::Text(format!(
+                                "{{\"err\":\"{}\"}}",
+                                err.to_string().replace('"', "\\\"")
+                            )))
+                            .await;
+                        continue;
+                    }
+                };
+
+                println!("json: {}", json);
+            }
+            Err(err) => {
+                println!("err: {}", err);
+                break;
+            }
+        }
     }
+
     println!("Websocket context {who} destroyed");
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct LoginInput {
     pub username: String,
     pub password: String,
 }
 
-#[allow(clippy::unused_async, unused)]
 async fn authentication(
     server_state: State<ServerState>,
-    json: Json<LoginInput>,
+    _json: Json<LoginInput>,
 ) -> impl IntoResponse {
-    "hi user"
-}
-
-#[allow(clippy::unused_async, unused)]
-async fn handler_404(req: Request<Body>) -> Html<&'static str> {
-    Html(include_str!("../../web/404.html"))
+    let db: MutexGuard<DatabaseConnection> = server_state.0.db.lock().await;
+    let _pool: &PgPool = &db.pool;
+    format!("{:?}", _json.0);
 }

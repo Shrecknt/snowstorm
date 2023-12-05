@@ -64,3 +64,9 @@ impl ModeCursors {
         }
     }
 }
+
+impl Default for ModeCursors {
+    fn default() -> Self {
+        Self::new()
+    }
+}

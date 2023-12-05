@@ -26,7 +26,7 @@ async fn main() -> eyre::Result<()> {
     let rescan = db.lock().await.get_rescan().await?;
     println!("rows = {:?}", rescan);
 
-    {
+    if std::env::var("PING").map(|v| v.to_lowercase()) == Ok("true".to_string()) {
         let db = db.clone();
         let state = state.clone();
         let task_queue = task_queue.clone();
@@ -35,7 +35,7 @@ async fn main() -> eyre::Result<()> {
         });
     }
 
-    {
+    if std::env::var("WEB").map(|v| v.to_lowercase()) == Ok("true".to_string()) {
         let db = db.clone();
         let state = state.clone();
         let task_queue = task_queue.clone();
