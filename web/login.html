@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <link rel="stylesheet" href="simple.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <header>
+        <nav>
+            <ul>
+                <li><a href="/">Home</a></li>
+                <li><a href="/search.html">Search</a></li>
+                <li><a href="https://discord.gg/WgaqXEywvA">Discord</a></li>
+                <li><a href="https://git.shrecked.dev/Shrecknt/snowstorm">
+                    <div class="icon forgejo-icon"></div> Git
+                </a></li>
+                <li><a class="current" href="./login.html">Login</a></li>
+            </ul>
+        </nav>
+        <h1>Hello There</h1>
+        <p>nothing to see here</p>
+    </header>
+
+    <div class="notice">
+        <strong style="font-size: 32px;">Login</strong><br /><br />
+        <form method="post" action="/auth" enctype="multipart/form-data">
+            <div>
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" placeholder="username">
+            </div><div>
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" placeholder="password">
+            </div>
+            <br />
+            <input type="submit" value="Login">
+            <a href="/signup.html"><input type="button" value="Create Account &UpperRightArrow;"></a>
+        </form>
+        <a href="https://discord.com/oauth2/authorize?client_id=1077019155410202757&response_type=code&redirect_uri=https%3A%2F%2Fsnowstorm.shrecked.dev%2Foauth2&scope=identify+guilds.members.read"><input type="button" value="Login with Discord"></a>
+        <a href="/login_minecraft.html"><input type="button" value="Login with Minecraft"></a>
+    </div>
+</body>
+
+</html>

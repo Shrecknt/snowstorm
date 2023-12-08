@@ -2,12 +2,17 @@ use crate::{database::DatabaseConnection, modes::ScanningMode, ScannerState};
 use axum::{
     extract::{
         ws::{Message, WebSocket},
-        ConnectInfo, State, WebSocketUpgrade,
+        ConnectInfo, Query, State, WebSocketUpgrade,
     },
     headers,
     response::IntoResponse,
     routing::{get, post},
-    Json, Router, TypedHeader,
+    Form, Router, TypedHeader,
+};
+use oauth2::{
+    basic::{BasicClient, BasicTokenType},
+    AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken, EmptyExtraTokenFields,
+    RedirectUrl, Scope, StandardTokenResponse, TokenResponse, TokenUrl,
 };
 use serde::Deserialize;
 use simd_json::owned::Value;
@@ -52,6 +57,7 @@ pub async fn start_server(
     let routes = Router::new()
         .route("/ws", get(ws_handler))
         .route("/auth", post(authentication))
+        .route("/oauth2", get(oauth2))
         .fallback_service(serve_dir.clone());
     let routes = routes.layer(
         TraceLayer::new_for_http().make_span_with(DefaultMakeSpan::default().include_headers(true)),
@@ -134,9 +140,140 @@ pub struct LoginInput {
 
 async fn authentication(
     server_state: State<ServerState>,
-    _json: Json<LoginInput>,
+    credentials: Form<LoginInput>,
 ) -> impl IntoResponse {
     let db: MutexGuard<DatabaseConnection> = server_state.0.db.lock().await;
     let _pool: &PgPool = &db.pool;
-    format!("{:?}", _json.0);
+    println!("credentials: {:?}", credentials.0);
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct Oauth2Parameters {
+    pub code: String,
+}
+
+async fn oauth2(
+    server_state: State<ServerState>,
+    oauth2_parameters: Query<Oauth2Parameters>,
+) -> impl IntoResponse {
+    let db: MutexGuard<DatabaseConnection> = server_state.0.db.lock().await;
+    let _pool: &PgPool = &db.pool;
+    println!("credentials: {:?}", oauth2_parameters.0);
+
+    match try_oauth(oauth2_parameters.0.clone()).await {
+        Ok((result, discord_user_info, discord_guild_member)) => {
+            format!("{result:?}\n\n{discord_user_info:?}\n\n{discord_guild_member:?}")
+        }
+        Err(err) => err.to_string(),
+    }
+}
+
+pub const BASE_AUTHORIZE_URI: &str = "https://discord.com/api/oauth2/authorize";
+pub const BASE_REVOKE_URI: &str = "https://discord.com/api/oauth2/revoke";
+pub const BASE_TOKEN_URI: &str = "https://discord.com/api/oauth2/token";
+
+async fn try_oauth(
+    oauth2_parameters: Oauth2Parameters,
+) -> eyre::Result<(
+    StandardTokenResponse<EmptyExtraTokenFields, BasicTokenType>,
+    DiscordUserInfo,
+    DiscordGuildMember,
+)> {
+    let redirect_uri = std::env::var("REDIRECT_URI").unwrap();
+    let client_id = std::env::var("CLIENT_ID").unwrap();
+    let client_secret = std::env::var("CLIENT_SECRET").unwrap();
+    let guild_id = std::env::var("GUILD_ID").unwrap();
+
+    let client = BasicClient::new(
+        ClientId::new(client_id.to_string()),
+        Some(ClientSecret::new(client_secret.to_string())),
+        AuthUrl::new(BASE_AUTHORIZE_URI.to_string())?,
+        Some(TokenUrl::new(BASE_TOKEN_URI.to_string())?),
+    )
+    .set_redirect_uri(RedirectUrl::new(redirect_uri.to_string())?);
+
+    let (_auth_url, _csrf_token) = client
+        .authorize_url(CsrfToken::new_random)
+        .add_scope(Scope::new("identify".to_string()))
+        .add_scope(Scope::new("guilds".to_string()))
+        .url();
+
+    let token_result = client
+        .exchange_code(AuthorizationCode::new(oauth2_parameters.code))
+        .request_async(oauth2::reqwest::async_http_client)
+        .await?;
+
+    let client = reqwest::Client::new();
+    let discord_user_info = client
+        .get("https://discord.com/api/users/@me")
+        .bearer_auth(token_result.access_token().secret())
+        .send()
+        .await?
+        .json::<DiscordUserInfo>()
+        .await?;
+    let discord_guild_member_info = client
+        .get(format!(
+            "https://discord.com/api/users/@me/guilds/{guild_id}/member"
+        ))
+        .bearer_auth(token_result.access_token().secret())
+        .send()
+        .await?
+        .json::<DiscordGuildMember>()
+        .await?;
+
+    Ok((token_result, discord_user_info, discord_guild_member_info))
+}
+
+#[derive(Deserialize, Debug)]
+pub struct DiscordUserInfo {
+    pub id: String,
+    pub username: String,
+    pub discriminator: String,
+    pub avatar: Option<String>,
+    pub public_flags: Option<i32>,
+    pub premium_type: Option<i32>,
+    pub flags: Option<i32>,
+    pub banner: Option<String>,
+    pub accent_color: Option<i32>,
+    pub global_name: Option<String>,
+    pub avatar_decoration: Option<String>,
+    pub banner_color: Option<String>,
+    pub mfa_enabled: Option<bool>,
+    pub locale: Option<String>,
+    pub bot: Option<bool>,
+    pub system: Option<bool>,
+    pub verified: Option<bool>,
+    pub email: Option<String>,
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(untagged)]
+pub enum DiscordGuildMember {
+    Member(DiscordGuildMemberInfo),
+    Error(DiscordUnknownGuildInfo),
+}
+
+#[derive(Deserialize, Debug)]
+pub struct DiscordUnknownGuildInfo {
+    pub message: String,
+    pub code: i32,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct DiscordGuildMemberInfo {
+    pub avatar: Option<String>,
+    pub communication_disabled_until: Option<i32>,
+    pub flags: i32,
+    pub joined_at: String,
+    pub nick: Option<String>,
+    pub pending: Option<bool>,
+    pub premium_since: Option<String>,
+    pub roles: Vec<String>,
+    pub unusual_dm_activity_until: Option<String>,
+    pub user: Option<DiscordUserInfo>,
+    pub mute: bool,
+    pub deaf: bool,
+    pub bio: String,
+    pub banner: Option<String>,
+    pub permissions: Option<String>,
 }

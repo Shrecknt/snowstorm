@@ -1,32 +1,35 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" prefix="og: https://ogp.me/ns#">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Snowstorm</title>
+    <title>Snowstorm Server Scanner</title>
+
+    <meta name="description" content="mass surveillance for block game" />
+    <meta property="og:title" content="Snowstorm Server Scanner" />
+    <meta property="og:image" content="https://snowstorm.shrecked.dev/logo.png" />
+    <meta property="og:url" content="https://snowstorm.shrecked.dev/" />
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Snowstorm" />
+    <meta property="og:description" content="mass surveillance for block game" />
+    <meta property="theme-color" content="#007AFF">
+
     <link rel="stylesheet" href="simple.min.css">
-    <style>
-        .forgejo-icon {
-            display: inline-block;
-            width: 16px;
-            height: 16px;
-            background-image: url(forgejo.svg);
-            position: relative;
-            top: 2px;
-            right: 2px;
-        }
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
-<body id="top">
+
+<body>
     <header>
         <nav>
             <ul>
                 <li><a class="current" href="/">Home</a></li>
-                <li><a href="./search.html">Search</a></li>
+                <li><a href="/search.html">Search</a></li>
                 <li><a href="https://discord.gg/WgaqXEywvA">Discord</a></li>
                 <li><a href="https://git.shrecked.dev/Shrecknt/snowstorm">
                     <div class="icon forgejo-icon"></div> Git
                 </a></li>
+                <li><a class="current" href="./login.html">Login</a></li>
             </ul>
         </nav>
         <h1>Snowstorm</h1>
@@ -38,4 +41,5 @@
         Contributions are always welcome on <a href="https://git.shrecked.dev/Shrecknt/snowstorm">our Forgejo</a>.
     </p>
 </body>
+
 </html>
