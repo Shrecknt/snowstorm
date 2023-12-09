@@ -14,7 +14,7 @@ use oauth2::{
     AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken, EmptyExtraTokenFields,
     RedirectUrl, Scope, StandardTokenResponse, TokenResponse, TokenUrl,
 };
-use serde::Deserialize;
+use serde::{Deserialize, Deserializer};
 use simd_json::owned::Value;
 use sqlx::PgPool;
 use std::{collections::LinkedList, net::SocketAddr, str::FromStr, sync::Arc, time::Duration};
@@ -262,18 +262,29 @@ pub struct DiscordUnknownGuildInfo {
 #[derive(Deserialize, Debug)]
 pub struct DiscordGuildMemberInfo {
     pub avatar: Option<String>,
-    pub communication_disabled_until: Option<i32>,
+    #[serde(deserialize_with = "deserialize_option")]
+    pub communication_disabled_until: Option<time::OffsetDateTime>,
     pub flags: i32,
     pub joined_at: String,
     pub nick: Option<String>,
     pub pending: Option<bool>,
-    pub premium_since: Option<String>,
+    #[serde(deserialize_with = "deserialize_option")]
+    pub premium_since: Option<time::OffsetDateTime>,
     pub roles: Vec<String>,
-    pub unusual_dm_activity_until: Option<String>,
+    #[serde(deserialize_with = "deserialize_option")]
+    pub unusual_dm_activity_until: Option<time::OffsetDateTime>,
     pub user: Option<DiscordUserInfo>,
     pub mute: bool,
     pub deaf: bool,
     pub bio: String,
     pub banner: Option<String>,
     pub permissions: Option<String>,
+}
+
+pub fn deserialize_option<'de, D>(deserializer: D) -> Result<Option<time::OffsetDateTime>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    Option::<time::OffsetDateTime>::deserialize(deserializer)
+        .map(|opt_wrapped| opt_wrapped.map(|wrapped| wrapped))
 }
