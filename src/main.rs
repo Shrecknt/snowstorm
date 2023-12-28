@@ -21,11 +21,6 @@ async fn main() -> eyre::Result<()> {
     let task_queue = Arc::new(Mutex::new(LinkedList::new()));
     let pinger = DatabaseScanner::new(state.clone(), ping_results_sender);
 
-    // println!("data: {:?}", pinger.data);
-
-    let rescan = db.lock().await.get_rescan().await?;
-    println!("rows = {:?}", rescan);
-
     if std::env::var("PING").map(|v| v.to_lowercase()) == Ok("true".to_string()) {
         let db = db.clone();
         let state = state.clone();
