@@ -1,9 +1,14 @@
-use super::ServerState;
-use crate::database::{discord_user::DiscordUserInfo, DatabaseConnection};
+use super::{
+    authentication::{get_auth_cookies, LoginInput},
+    ServerState,
+};
+use crate::database::{discord_user::DiscordUserInfo, user::User, DbPush};
 use axum::{
     extract::{Query, State},
+    headers,
     http::HeaderMap,
     response::{IntoResponse, Redirect},
+    Form, TypedHeader,
 };
 use oauth2::{
     basic::{BasicClient, BasicTokenType},
@@ -12,8 +17,7 @@ use oauth2::{
 };
 use reqwest::header::SET_COOKIE;
 use serde::{Deserialize, Deserializer, Serialize};
-use sqlx::PgPool;
-use tokio::sync::MutexGuard;
+use uuid::Uuid;
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Oauth2Parameters {
@@ -25,16 +29,113 @@ pub async fn oauth2(
     oauth2_parameters: Query<Oauth2Parameters>,
 ) -> impl IntoResponse {
     match try_oauth(oauth2_parameters.0.clone()).await {
-        Ok((_result, _discord_user_info, _discord_guild_member)) => {
-            let db: MutexGuard<DatabaseConnection> = server_state.0.db.lock().await;
-            let _pool: &PgPool = &db.pool;
+        Ok((_result, mut discord_user_info, _discord_guild_member)) => {
+            let db = server_state.0.db.lock().await;
+            let pool = &db.pool;
+
+            if let Some(discord_user) =
+                DiscordUserInfo::get_discord_id(&discord_user_info.discord_id, pool).await
+            {
+                if let Some(user_id) = discord_user.user_id {
+                    let user = User::get_id(user_id, pool).await.unwrap();
+                    return (get_auth_cookies(&user), Redirect::to("/dashboard.html"));
+                }
+            };
+
+            let link_code = Uuid::new_v4().to_string();
+
+            discord_user_info.link_code = Some(link_code.clone());
+            discord_user_info.push(pool).await.unwrap();
 
             let mut headers = HeaderMap::new();
-            headers.insert(SET_COOKIE, "a=b".parse().unwrap());
+            headers.append(
+                SET_COOKIE,
+                format!(
+                    "__Host-Discord-Link={}; Secure; HttpOnly; Path=/; SameSite=Strict;",
+                    urlencoding::encode(&link_code)
+                )
+                .parse()
+                .unwrap(),
+            );
+            headers.append(
+                SET_COOKIE,
+                format!(
+                    "Discord-Id={}; Secure; Path=/; SameSite=Strict;",
+                    urlencoding::encode(&discord_user_info.discord_id.to_string())
+                )
+                .parse()
+                .unwrap(),
+            );
             (headers, Redirect::to("/discord_login.html"))
         }
-        Err(_) => (HeaderMap::new(), Redirect::to("/discord_login.html")),
+        Err(_) => (HeaderMap::new(), Redirect::to("/login.html")),
     }
+}
+
+pub async fn link_account(
+    server_state: State<ServerState>,
+    cookies: Option<TypedHeader<headers::Cookie>>,
+    credentials: Form<LoginInput>,
+) -> impl IntoResponse {
+    let db = server_state.0.db.lock().await;
+    let pool = &db.pool;
+    let credentials = credentials.0.clone();
+
+    let link_code = if let Some(TypedHeader(cookies)) = &cookies {
+        match cookies.get("__Host-Discord-Link") {
+            Some(code) => code,
+            None => {
+                return (
+                    HeaderMap::new(),
+                    Redirect::to("/discord_login.html?error=5"),
+                )
+            }
+        }
+    } else {
+        return (
+            HeaderMap::new(),
+            Redirect::to("/discord_login.html?error=4"),
+        );
+    };
+
+    if !credentials.is_valid() {
+        return (
+            HeaderMap::new(),
+            Redirect::to("/discord_login.html?error=1"),
+        );
+    }
+
+    let existing_account = User::get_username(&credentials.username, pool).await;
+
+    if existing_account.is_some() {
+        return (
+            HeaderMap::new(),
+            Redirect::to("/discord_login.html?error=2"),
+        );
+    }
+
+    let mut user = User::new(&credentials.username, &credentials.hashed_password());
+    if user.push(pool).await.is_err() {
+        return (
+            HeaderMap::new(),
+            Redirect::to("/discord_login.html?error=3"),
+        );
+    };
+
+    let mut discord_user = match DiscordUserInfo::get_link_code(link_code, pool).await {
+        Some(user) => user,
+        None => {
+            return (
+                HeaderMap::new(),
+                Redirect::to("/discord_login.html?error=6"),
+            )
+        }
+    };
+    discord_user.link_code = None;
+    discord_user.user_id = user.id;
+    discord_user.push(pool).await.unwrap();
+
+    (get_auth_cookies(&user), Redirect::to("/dashboard.html"))
 }
 
 pub const BASE_AUTHORIZE_URI: &str = "https://discord.com/api/oauth2/authorize";

@@ -28,7 +28,7 @@
 
     <div class="notice">
         <strong style="font-size: 32px;">Create Account</strong><br /><br />
-        <form onsubmit="clearCookie('discord_link_code')" method="post" action="/auth/signup_discord" enctype="application/x-www-form-urlencoded">
+        <form method="post" action="/auth/discord" enctype="application/x-www-form-urlencoded">
             <div>
                 <label for="username">Username</label>
                 <input type="text" id="username" name="username" placeholder="username">
@@ -54,12 +54,7 @@
             if (parts.length === 2) return decodeURIComponent(parts.pop().split(';').shift());
         }
 
-        function clearCookie(name) {
-            document.cookie = `${name}=; Max-Age=0`;
-        }
-
-        const discordLinkCode = getCookie("discord_link_code");
-        const discordId = getCookie("discord_id");
+        const discordId = getCookie("Discord-Id");
 
         const discordIdElem = document.getElementById("discordId");
         if (discordId !== undefined) {
@@ -67,8 +62,6 @@
         } else {
             discordIdElem.value = "Missing Cookie";
         }
-
-        console.log("discordLinkCode", discordLinkCode);
     </script>
 </body>
 

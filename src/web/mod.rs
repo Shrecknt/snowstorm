@@ -1,4 +1,6 @@
-use crate::{database::DatabaseConnection, modes::ScanningMode, ScannerState};
+use crate::{
+    database::DatabaseConnection, modes::ScanningMode, web::jwt::UserSession, ScannerState,
+};
 use axum::{
     extract::{
         ws::{Message, WebSocket},
@@ -19,6 +21,8 @@ use tower_http::trace::{DefaultMakeSpan, TraceLayer};
 use tracing_subscriber::prelude::*;
 
 pub mod authentication;
+pub mod jwt;
+
 mod oauth;
 
 #[derive(Clone)]
@@ -54,6 +58,8 @@ pub async fn start_server(
         .route("/ws", get(ws_handler))
         .route("/auth/login", post(authentication::login))
         .route("/auth/signup", post(authentication::create_account))
+        .route("/auth/discord", post(oauth::link_account))
+        .route("/auth/info", get(authentication::info))
         .route("/oauth2", get(oauth::oauth2))
         .fallback_service(serve_dir.clone());
     #[cfg(debug_assertions)]
@@ -73,9 +79,23 @@ pub async fn start_server(
 #[allow(clippy::unused_async)]
 async fn ws_handler(
     ws: WebSocketUpgrade,
+    cookies: Option<TypedHeader<headers::Cookie>>,
     user_agent: Option<TypedHeader<headers::UserAgent>>,
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
 ) -> impl IntoResponse {
+    let user = match UserSession::from_cookies(&cookies) {
+        Some(Ok(session)) => {
+            if session.is_valid() {
+                Some(session)
+            } else {
+                None
+            }
+        }
+        _ => None,
+    };
+
+    println!("user: {user:?}");
+
     let user_agent = if let Some(TypedHeader(user_agent)) = user_agent {
         user_agent.to_string()
     } else {

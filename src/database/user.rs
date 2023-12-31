@@ -6,16 +6,16 @@ use super::DbPush;
 #[derive(sqlx::FromRow, Debug)]
 pub struct User {
     pub id: Option<i32>,
-    pub username: Option<String>,
-    pub password: Option<String>,
+    pub username: String,
+    pub password: String,
 }
 
 impl Default for User {
     fn default() -> Self {
         Self {
             id: None,
-            username: Some(String::new()),
-            password: Some(String::new()),
+            username: String::new(),
+            password: String::new(),
         }
     }
 }
@@ -24,12 +24,13 @@ impl User {
     pub fn new(username: &str, password: &str) -> Self {
         Self {
             id: None,
-            username: Some(username.to_string()),
-            password: Some(password.to_string()),
+            username: username.to_string(),
+            password: password.to_string(),
         }
     }
+
     pub async fn get_id(id: i32, pool: &PgPool) -> Option<Self> {
-        match sqlx::query_as("SELECT * FROM users WHERE id = $1::SERIAL")
+        match sqlx::query_as("SELECT * FROM users WHERE id = $1::INT")
             .bind(id)
             .fetch_optional(pool)
             .await
@@ -38,8 +39,9 @@ impl User {
             Err(_) => None,
         }
     }
+
     pub async fn get_username(username: &str, pool: &PgPool) -> Option<Self> {
-        match sqlx::query_as("SELECT * FROM users WHERE username = $1::TEXT")
+        match sqlx::query_as("SELECT * FROM users WHERE username ILIKE $1::TEXT")
             .bind(username)
             .fetch_optional(pool)
             .await
@@ -49,14 +51,15 @@ impl User {
         }
     }
 }
+
 impl DbPush for User {
     async fn push(&mut self, pool: &PgPool) -> Result<(), eyre::Report> {
-        let username = self.username.to_owned().ok_or_eyre("username is none")?;
-        let password = self.password.to_owned().ok_or_eyre("password is none")?;
+        let username = self.username.to_owned();
+        let password = self.password.to_owned();
 
         let query = match self.id {
             Some(_) => {
-                "UPDATE users SET username = $2::TEXT, password = $3::TEXT WHERE id = $1::SERIAL"
+                "UPDATE users SET username = $2::TEXT, password = $3::TEXT WHERE id = $1::INT"
             }
             None => "INSERT INTO users (username, password) VALUES ($2::TEXT, $3::TEXT)",
         };

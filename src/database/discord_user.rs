@@ -1,32 +1,72 @@
-use serde::{Deserialize, Serialize};
-use sqlx::Row;
-
 use super::DbPush;
+use serde::{Deserialize, Serialize};
+use sqlx::{PgPool, Row};
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(sqlx::FromRow, Deserialize, Serialize, Debug)]
 pub struct DiscordUserInfo {
+    #[serde(skip)]
     pub id: Option<i32>,
+    #[serde(skip)]
     pub user_id: Option<i32>,
+    #[serde(skip)]
     pub link_code: Option<String>,
     #[serde(rename = "id")]
     pub discord_id: String,
     pub username: String,
     pub discriminator: String,
-    pub avatar: Option<String>,
-    pub public_flags: Option<i32>,
-    pub premium_type: Option<i32>,
-    pub flags: Option<i32>,
-    pub banner: Option<String>,
-    pub accent_color: Option<i32>,
     pub global_name: Option<String>,
-    pub avatar_decoration: Option<String>,
-    pub banner_color: Option<String>,
-    pub mfa_enabled: Option<bool>,
-    pub locale: Option<String>,
-    pub bot: Option<bool>,
-    pub system: Option<bool>,
-    pub verified: Option<bool>,
-    pub email: Option<String>,
+    // pub avatar: Option<String>,
+    // pub public_flags: Option<i32>,
+    // pub premium_type: Option<i32>,
+    // pub flags: Option<i32>,
+    // pub banner: Option<String>,
+    // pub accent_color: Option<i32>,
+    // pub avatar_decoration: Option<String>,
+    // pub banner_color: Option<String>,
+    // pub mfa_enabled: Option<bool>,
+    // pub locale: Option<String>,
+    // pub bot: Option<bool>,
+    // pub system: Option<bool>,
+    // pub verified: Option<bool>,
+    // pub email: Option<String>,
+}
+
+impl DiscordUserInfo {
+    pub async fn get_id(id: i32, pool: &PgPool) -> Option<Self> {
+        match sqlx::query_as("SELECT * FROM discord_users WHERE id = $1::SERIAL")
+            .bind(id)
+            .fetch_optional(pool)
+            .await
+        {
+            Ok(user) => user,
+            Err(_) => None,
+        }
+    }
+
+    pub async fn get_discord_id(discord_id: &str, pool: &PgPool) -> Option<Self> {
+        match sqlx::query_as("SELECT * FROM discord_users WHERE discord_id = $1::TEXT")
+            .bind(discord_id)
+            .fetch_optional(pool)
+            .await
+        {
+            Ok(user) => user,
+            Err(_) => None,
+        }
+    }
+
+    pub async fn get_link_code(link_code: &str, pool: &PgPool) -> Option<Self> {
+        match sqlx::query_as("SELECT * FROM discord_users WHERE link_code = $1::TEXT")
+            .bind(link_code)
+            .fetch_optional(pool)
+            .await
+        {
+            Ok(user) => {
+                println!("user = {user:?}");
+                user
+            }
+            Err(_) => None,
+        }
+    }
 }
 
 impl DbPush for DiscordUserInfo {
@@ -39,9 +79,9 @@ impl DbPush for DiscordUserInfo {
                     username = $4::TEXT,
                     discriminator = $5::TEXT,
                     global_name = $6::TEXT,
-                    link_code = $7::TEXT,
+                    link_code = $7::TEXT
                 WHERE
-                    id = $1::SERIAL"
+                    id = $1::INT"
             }
             None => {
                 "INSERT INTO discord_users (
