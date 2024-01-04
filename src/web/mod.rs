@@ -9,7 +9,7 @@ use reqwest::StatusCode;
 use std::{collections::LinkedList, net::SocketAddr, str::FromStr, sync::Arc, time::Duration};
 use tokio::sync::Mutex;
 use tower::ServiceExt;
-use tower_http::services::{ServeDir, ServeFile};
+use tower_http::services::ServeDir;
 #[cfg(debug_assertions)]
 use tower_http::trace::{DefaultMakeSpan, TraceLayer};
 #[cfg(debug_assertions)]

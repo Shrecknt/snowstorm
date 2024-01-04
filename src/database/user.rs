@@ -2,21 +2,11 @@ use sqlx::{PgPool, Row};
 
 use super::DbPush;
 
-#[derive(sqlx::FromRow, Debug)]
+#[derive(sqlx::FromRow, Debug, Default)]
 pub struct User {
     pub id: Option<i32>,
     pub username: String,
     pub password: String,
-}
-
-impl Default for User {
-    fn default() -> Self {
-        Self {
-            id: None,
-            username: String::new(),
-            password: String::new(),
-        }
-    }
 }
 
 impl User {
