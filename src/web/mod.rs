@@ -1,19 +1,14 @@
-use crate::{
-    database::DatabaseConnection, modes::ScanningMode, web::jwt::UserSession, ScannerState,
-};
+use crate::{database::DatabaseConnection, modes::ScanningMode, ScannerState};
 use axum::{
-    extract::{
-        ws::{Message, WebSocket},
-        ConnectInfo, WebSocketUpgrade,
-    },
-    headers,
-    response::IntoResponse,
+    body::{boxed, Body, BoxBody},
+    http::{Request, Response, Uri},
     routing::{get, post},
-    Router, TypedHeader,
+    Router,
 };
-use simd_json::owned::Value;
+use reqwest::StatusCode;
 use std::{collections::LinkedList, net::SocketAddr, str::FromStr, sync::Arc, time::Duration};
 use tokio::sync::Mutex;
+use tower::ServiceExt;
 use tower_http::services::{ServeDir, ServeFile};
 #[cfg(debug_assertions)]
 use tower_http::trace::{DefaultMakeSpan, TraceLayer};
@@ -24,6 +19,7 @@ pub mod authentication;
 pub mod jwt;
 
 mod oauth;
+mod ws;
 
 #[derive(Clone)]
 pub struct ServerState {
@@ -52,16 +48,14 @@ pub async fn start_server(
         task_queue,
     };
 
-    let serve_dir = ServeDir::new("web").not_found_service(ServeFile::new("web/404.html"));
-
     let routes = Router::new()
-        .route("/ws", get(ws_handler))
+        .nest_service("/", get(handler))
+        .route("/ws", get(ws::ws_handler))
         .route("/auth/login", post(authentication::login))
         .route("/auth/signup", post(authentication::create_account))
         .route("/auth/discord", post(oauth::link_account))
         .route("/auth/info", get(authentication::info))
-        .route("/oauth2", get(oauth::oauth2))
-        .fallback_service(serve_dir.clone());
+        .route("/oauth2", get(oauth::oauth2));
     #[cfg(debug_assertions)]
     let routes = routes.layer(
         TraceLayer::new_for_http().make_span_with(DefaultMakeSpan::default().include_headers(true)),
@@ -76,76 +70,37 @@ pub async fn start_server(
     Ok(())
 }
 
-#[allow(clippy::unused_async)]
-async fn ws_handler(
-    ws: WebSocketUpgrade,
-    cookies: Option<TypedHeader<headers::Cookie>>,
-    user_agent: Option<TypedHeader<headers::UserAgent>>,
-    ConnectInfo(addr): ConnectInfo<SocketAddr>,
-) -> impl IntoResponse {
-    let user = match UserSession::from_cookies(&cookies) {
-        Some(Ok(session)) => {
-            if session.is_valid() {
-                Some(session)
-            } else {
-                None
+async fn handler(uri: Uri) -> Result<Response<BoxBody>, (StatusCode, String)> {
+    let res = get_static_file(uri.clone()).await?;
+    if res.status() == StatusCode::NOT_FOUND {
+        match format!("{}.html?{}", uri.path(), uri.query().unwrap_or("")).parse() {
+            Ok(uri_html) => {
+                let res = get_static_file(uri_html).await?;
+                if res.status() == StatusCode::NOT_FOUND {
+                    get_static_file("/404.html".parse().unwrap()).await
+                } else {
+                    Ok(res)
+                }
             }
+            Err(_) => Err((StatusCode::INTERNAL_SERVER_ERROR, "Invalid URI".to_string())),
         }
-        _ => None,
-    };
-
-    println!("user: {user:?}");
-
-    let user_agent = if let Some(TypedHeader(user_agent)) = user_agent {
-        user_agent.to_string()
     } else {
-        String::from("Unknown browser")
-    };
-    println!("`{user_agent}` at {addr} connected.");
-    ws.on_upgrade(move |socket| handle_socket(socket, addr))
+        Ok(res)
+    }
 }
 
-async fn handle_socket(mut socket: WebSocket, who: SocketAddr) {
-    let _ = socket.send(Message::Ping(vec![1, 2, 3])).await;
-
-    while let Some(message) = socket.recv().await {
-        match message {
-            Ok(message) => {
-                let text = match &message {
-                    Message::Text(text) => text.trim(),
-                    Message::Close(_) => break,
-                    _ => {
-                        println!("non-text message: {:?}", message);
-                        continue;
-                    }
-                };
-                if text.is_empty() {
-                    continue;
-                }
-                println!("len: '{}', bytes: '{:?}'", text.len(), text.as_bytes());
-                println!("message: '{}'", text);
-
-                let json: Value = match simd_json::deserialize(&mut text.as_bytes().to_owned()) {
-                    Ok(json) => json,
-                    Err(err) => {
-                        let _ = socket
-                            .send(Message::Text(format!(
-                                "{{\"err\":\"{}\"}}",
-                                err.to_string().replace('"', "\\\"")
-                            )))
-                            .await;
-                        continue;
-                    }
-                };
-
-                println!("json: {}", json);
-            }
-            Err(err) => {
-                println!("err: {}", err);
-                break;
-            }
-        }
-    }
-
-    println!("Websocket context {who} destroyed");
+async fn get_static_file(uri: Uri) -> Result<Response<BoxBody>, (StatusCode, String)> {
+    let req = Request::builder()
+        .uri(uri.clone())
+        .body(Body::empty())
+        .unwrap();
+    let res = match ServiceExt::oneshot(ServeDir::new("web/build"), req).await {
+        Ok(res) => Ok(res.map(boxed)),
+        Err(err) => Err((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Something went wrong: {}", err),
+        )),
+    };
+    println!("uri = {:?}, res = {:?}", uri, res);
+    res
 }

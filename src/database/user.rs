@@ -1,4 +1,3 @@
-use eyre::OptionExt;
 use sqlx::{PgPool, Row};
 
 use super::DbPush;
