@@ -1,6 +1,6 @@
-use std::time::Duration;
-
 use modes::ScanningMode;
+use serde::{Deserialize, Serialize};
+use std::time::Duration;
 
 pub mod database;
 pub mod io;
@@ -24,8 +24,12 @@ impl Default for ScannerState {
     }
 }
 
+#[derive(Serialize, Deserialize)]
 pub enum Action {
-    ScanningMode(ScanningMode, Duration),
+    SetMode(ScanningMode, Duration),
     Skip,
+    Clear,
     Pause,
+    Dequeue(usize),
+    Enqueue(ScanningMode, Duration),
 }

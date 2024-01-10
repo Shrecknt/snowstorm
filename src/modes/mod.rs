@@ -1,6 +1,7 @@
 use crate::util::addr_range::Ipv4AddrRange;
 use lazy_static::lazy_static;
 use perfect_rand::PerfectRng;
+use serde::{Deserialize, Serialize};
 use std::{net::Ipv4Addr, ops::Range};
 
 mod all_ports;
@@ -26,7 +27,7 @@ lazy_static! {
     pub static ref RANDOMIZER: PerfectRng = PerfectRng::new(2u64.pow(32), 0xda0d71bc391d3c92, 3);
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub enum ScanningMode {
     /// Don't ping any servers - This can be enabled from the web ui
     Paused,

@@ -1,6 +1,8 @@
+#![feature(linked_list_remove)]
+
 use snowstorm::{
     database::DatabaseConnection,
-    io::{database::DatabaseScanner, Io},
+    io::Io,
     modes::{self, ModeCursors, ScanningMode},
     web, Action, ScannerState,
 };
@@ -11,6 +13,11 @@ use std::{
 };
 use tokio::sync::Mutex;
 
+#[cfg(debug_assertions)]
+use snowstorm::io::database::DatabaseScanner;
+#[cfg(not(debug_assertions))]
+use snowstorm::io::network::NetworkScanner;
+
 #[tokio::main]
 async fn main() -> eyre::Result<()> {
     dotenv::dotenv()?;
@@ -20,7 +27,14 @@ async fn main() -> eyre::Result<()> {
     let (ping_results_sender, ping_results) = channel();
     let mode_queue = Arc::new(Mutex::new(LinkedList::new()));
     let action_queue = Arc::new(Mutex::new(LinkedList::new()));
+
+    #[cfg(debug_assertions)]
     let pinger = DatabaseScanner::new(state.clone(), ping_results_sender);
+    #[cfg(not(debug_assertions))]
+    let pinger = NetworkScanner {
+        state: state.clone(),
+        sender: ping_results_sender,
+    };
 
     if std::env::var("PING").map(|v| v.to_lowercase()) == Ok("true".to_string()) {
         let db = db.clone();
@@ -131,21 +145,29 @@ async fn ping_loop<T: Io>(
         if delta > Duration::from_millis(1000) {
             if let Some(action) = action_queue.lock().await.pop_front() {
                 match action {
-                    Action::ScanningMode(new_mode, duration) => {
+                    Action::SetMode(new_mode, duration) => {
                         mode = new_mode;
                         current_mode_duration = duration;
                     }
                     Action::Skip => {
                         current_mode_duration = Duration::ZERO;
                     }
-                    Action::Pause => {
-                        let remaining_duration = current_mode_duration - delta;
-                        mode_queue
-                            .lock()
-                            .await
-                            .push_front((mode, remaining_duration));
+                    Action::Clear => {
                         mode = ScanningMode::Paused;
                         current_mode_duration = Duration::MAX;
+                        mode_queue.lock().await.clear();
+                    }
+                    Action::Pause => {
+                        let remaining = current_mode_duration - delta;
+                        mode_queue.lock().await.push_front((mode, remaining));
+                        mode = ScanningMode::Paused;
+                        current_mode_duration = Duration::MAX;
+                    }
+                    Action::Dequeue(index) => {
+                        mode_queue.lock().await.remove(index);
+                    }
+                    Action::Enqueue(mode, duration) => {
+                        mode_queue.lock().await.push_back((mode, duration));
                     }
                 }
             }

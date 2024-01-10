@@ -1,6 +1,7 @@
+use serde::{Deserialize, Serialize};
 use std::{net::Ipv4Addr, str::FromStr};
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Ipv4AddrRange {
     pub first: Ipv4Addr,
     pub last: Ipv4Addr,
