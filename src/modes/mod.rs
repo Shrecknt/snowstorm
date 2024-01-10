@@ -4,6 +4,7 @@ use perfect_rand::PerfectRng;
 use std::{net::Ipv4Addr, ops::Range};
 
 mod all_ports;
+mod auto;
 mod discovery;
 mod discovery_top;
 mod range;
@@ -11,6 +12,7 @@ mod range_top;
 mod rescan;
 
 pub use all_ports::all_ports;
+pub use auto::auto;
 pub use discovery::discovery;
 pub use discovery_top::discovery_top;
 pub use range::range;
@@ -40,6 +42,8 @@ pub enum ScanningMode {
     AllPorts(Ipv4Addr),
     /// Ping all servers in the database
     Rescan(Vec<(Ipv4Addr, u16)>),
+    /// Automatically chose and switch between modes
+    Auto,
 }
 
 #[derive(Debug)]

@@ -24,7 +24,7 @@
 		</div>
 		<br />
 		<input type="submit" value="Create Account" />
-		<a href="/login.html"><input type="button" value="Login &UpperRightArrow;" /></a>
+		<a href="/login"><input type="button" value="Login &UpperRightArrow;" /></a>
 	</form>
 	<a
 		href="https://discord.com/oauth2/authorize?client_id=1077019155410202757&response_type=code&redirect_uri=https%3A%2F%2Fsnowstorm.shrecked.dev%2Foauth2&scope=identify+guilds.members.read"

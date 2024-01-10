@@ -2,7 +2,7 @@ use snowstorm::{
     database::DatabaseConnection,
     io::{database::DatabaseScanner, Io},
     modes::{self, ModeCursors, ScanningMode},
-    web, ScannerState,
+    web, Action, ScannerState,
 };
 use std::{
     collections::LinkedList,
@@ -18,24 +18,31 @@ async fn main() -> eyre::Result<()> {
     let db = Arc::new(Mutex::new(DatabaseConnection::new().await?));
     let state = Arc::new(Mutex::new(ScannerState::default()));
     let (ping_results_sender, ping_results) = channel();
-    let task_queue = Arc::new(Mutex::new(LinkedList::new()));
+    let mode_queue = Arc::new(Mutex::new(LinkedList::new()));
+    let action_queue = Arc::new(Mutex::new(LinkedList::new()));
     let pinger = DatabaseScanner::new(state.clone(), ping_results_sender);
 
     if std::env::var("PING").map(|v| v.to_lowercase()) == Ok("true".to_string()) {
         let db = db.clone();
         let state = state.clone();
-        let task_queue = task_queue.clone();
+        let mode_queue = mode_queue.clone();
+        let action_queue = action_queue.clone();
         tokio::spawn(async move {
-            ping_loop(db, state, task_queue, pinger).await.unwrap();
+            ping_loop(db, state, mode_queue, action_queue, pinger)
+                .await
+                .unwrap();
         });
     }
 
     if std::env::var("WEB").map(|v| v.to_lowercase()) == Ok("true".to_string()) {
         let db = db.clone();
         let state = state.clone();
-        let task_queue = task_queue.clone();
+        let mode_queue = mode_queue.clone();
+        let action_queue = action_queue.clone();
         tokio::spawn(async move {
-            web::start_server(db, state, task_queue).await.unwrap();
+            web::start_server(db, state, mode_queue, action_queue)
+                .await
+                .unwrap();
         });
     }
 
@@ -52,17 +59,20 @@ async fn main() -> eyre::Result<()> {
 async fn ping_loop<T: Io>(
     db: Arc<Mutex<DatabaseConnection>>,
     state: Arc<Mutex<ScannerState>>,
-    task_queue: Arc<Mutex<LinkedList<(ScanningMode, Duration)>>>,
+    mode_queue: Arc<Mutex<LinkedList<(ScanningMode, Duration)>>>,
+    action_queue: Arc<Mutex<LinkedList<Action>>>,
     pinger: T,
 ) -> eyre::Result<()> {
     let mut cursors = ModeCursors::new();
     let mut mode = ScanningMode::Paused;
-    let mut current_mode_duration = Duration::MAX;
+    let mut current_mode_duration = Duration::from_millis(1000);
 
     let mut time = Instant::now();
     loop {
         let now = Instant::now();
-        if now - time > current_mode_duration {
+        let delta = now - time;
+
+        if delta > current_mode_duration {
             time = now;
 
             let mut state = state.lock().await;
@@ -75,16 +85,21 @@ async fn ping_loop<T: Io>(
 
             drop(state); // prevent deadlock
 
-            current_mode_duration = Duration::from_millis(1000);
-            if let Some((new_mode, duration)) = task_queue.lock().await.pop_front() {
+            if let Some((new_mode, duration)) = mode_queue.lock().await.pop_front() {
                 mode = new_mode;
                 current_mode_duration = duration;
-            } else if let ScanningMode::Rescan(..) = mode {
-                // TODO decide on the best scanning mode to use
-                mode = ScanningMode::Discovery;
             } else {
-                let rescan_data = db.lock().await.get_rescan().await.unwrap();
-                mode = ScanningMode::Rescan(rescan_data);
+                match &mode {
+                    ScanningMode::Auto => {}
+                    ScanningMode::Paused | ScanningMode::Rescan(..) => {
+                        mode = ScanningMode::Paused;
+                        current_mode_duration = Duration::MAX;
+                    }
+                    _ => {
+                        let rescan_data = db.lock().await.get_rescan().await.unwrap();
+                        mode = ScanningMode::Rescan(rescan_data);
+                    }
+                }
             }
         }
 
@@ -107,6 +122,32 @@ async fn ping_loop<T: Io>(
             }
             ScanningMode::Rescan(ref ips) => {
                 modes::rescan(&pinger, &mut cursors.rescan, ips).await?;
+            }
+            ScanningMode::Auto => {
+                modes::auto(&pinger, &mut cursors).await?;
+            }
+        }
+
+        if delta > Duration::from_millis(1000) {
+            if let Some(action) = action_queue.lock().await.pop_front() {
+                match action {
+                    Action::ScanningMode(new_mode, duration) => {
+                        mode = new_mode;
+                        current_mode_duration = duration;
+                    }
+                    Action::Skip => {
+                        current_mode_duration = Duration::ZERO;
+                    }
+                    Action::Pause => {
+                        let remaining_duration = current_mode_duration - delta;
+                        mode_queue
+                            .lock()
+                            .await
+                            .push_front((mode, remaining_duration));
+                        mode = ScanningMode::Paused;
+                        current_mode_duration = Duration::MAX;
+                    }
+                }
             }
         }
     }

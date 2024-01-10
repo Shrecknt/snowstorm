@@ -1,3 +1,7 @@
+use std::time::Duration;
+
+use modes::ScanningMode;
+
 pub mod database;
 pub mod io;
 pub mod modes;
@@ -18,4 +22,10 @@ impl Default for ScannerState {
     fn default() -> Self {
         Self::new()
     }
+}
+
+pub enum Action {
+    ScanningMode(ScanningMode, Duration),
+    Skip,
+    Pause,
 }

@@ -2,6 +2,8 @@
 	import Header from '../Header.svelte';
 	import { onMount } from 'svelte';
 
+	export let discordIdElem: HTMLInputElement;
+
 	onMount(() => {
 		function getCookie(name: string) {
 			const value = `; ${document.cookie}`;
@@ -12,7 +14,6 @@
 
 		const discordId = getCookie('Discord-Id');
 
-		const discordIdElem = document.getElementById('discordId') as HTMLInputElement;
 		if (discordId !== undefined) {
 			discordIdElem.value = discordId;
 		} else {
@@ -43,10 +44,16 @@
 		</div>
 		<div>
 			<label for="discordId">Discord ID</label>
-			<input type="text" id="discordId" value="pls enable js :(" disabled />
+			<input
+				type="text"
+				id="discordId"
+				bind:this={discordIdElem}
+				value="pls enable js :("
+				disabled
+			/>
 		</div>
 		<br />
 		<input type="submit" value="Create Account" />
-		<a href="/login.html"><input type="button" value="Login &UpperRightArrow;" /></a>
+		<a href="/login"><input type="button" value="Login &UpperRightArrow;" /></a>
 	</form>
 </div>

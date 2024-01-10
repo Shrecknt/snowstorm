@@ -30,6 +30,9 @@ Create a postgres database using the [postgres setup script](postgres_setup.sql)
 git clone https://git.shrecked.dev/Shrecknt/snowstorm.git
 cd snowstorm
 cp .env.example .env
-nano .env # modify .env to match your postgres setup
+nano .env # modify .env to your liking
+cd web
+npm run build
+cd ..
 cargo run --release
 ```

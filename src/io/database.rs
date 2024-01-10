@@ -1,5 +1,8 @@
-use super::{Io, PingResult, PlayerInfo};
-use crate::ScannerState;
+use super::Io;
+use crate::{
+    database::{player::PlayerInfo, server::PingResult},
+    ScannerState,
+};
 use std::{
     collections::BTreeSet,
     net::Ipv4Addr,

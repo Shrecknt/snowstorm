@@ -42,7 +42,7 @@ pub async fn login(
     let credentials = credentials.0.clone();
 
     if !credentials.is_valid() {
-        return (HeaderMap::new(), Redirect::to("/login.html?error=1"));
+        return (HeaderMap::new(), Redirect::to("/login?error=1"));
     }
 
     let existing_account: Option<User> =
@@ -52,17 +52,17 @@ pub async fn login(
             .await
         {
             Ok(account) => account,
-            Err(_) => return (HeaderMap::new(), Redirect::to("/login.html?error=2")),
+            Err(_) => return (HeaderMap::new(), Redirect::to("/login?error=2")),
         };
 
     if let Some(user) = existing_account {
         if !verify(credentials.password, &user.password).unwrap() {
-            return (HeaderMap::new(), Redirect::to("/login.html?error=2"));
+            return (HeaderMap::new(), Redirect::to("/login?error=2"));
         }
 
-        return (get_auth_cookies(&user), Redirect::to("/dashboard.html"));
+        return (get_auth_cookies(&user), Redirect::to("/dashboard"));
     }
-    (HeaderMap::new(), Redirect::to("/login.html?error=3"))
+    (HeaderMap::new(), Redirect::to("/login?error=3"))
 }
 
 pub async fn create_account(
@@ -74,20 +74,20 @@ pub async fn create_account(
     let credentials = credentials.0.clone();
 
     if !credentials.is_valid() {
-        return (HeaderMap::new(), Redirect::to("/signup.html?error=1"));
+        return (HeaderMap::new(), Redirect::to("/signup?error=1"));
     }
 
     let existing_account = User::get_username(&credentials.username, pool).await;
 
     if existing_account.is_some() {
-        return (HeaderMap::new(), Redirect::to("/signup.html?error=2"));
+        return (HeaderMap::new(), Redirect::to("/signup?error=2"));
     }
 
     let mut user = User::new(&credentials.username, &credentials.hashed_password());
     if user.push(pool).await.is_err() {
-        return (HeaderMap::new(), Redirect::to("/signup.html?error=3"));
+        return (HeaderMap::new(), Redirect::to("/signup?error=3"));
     };
-    (get_auth_cookies(&user), Redirect::to("/dashboard.html"))
+    (get_auth_cookies(&user), Redirect::to("/dashboard"))
 }
 
 pub fn get_auth_cookies(user: &User) -> HeaderMap {

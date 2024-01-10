@@ -1,4 +1,4 @@
-use crate::{database::DatabaseConnection, modes::ScanningMode, ScannerState};
+use crate::{database::DatabaseConnection, modes::ScanningMode, Action, ScannerState};
 use axum::{
     body::{boxed, Body, BoxBody},
     http::{Request, Response, Uri},
@@ -25,13 +25,15 @@ mod ws;
 pub struct ServerState {
     pub db: Arc<Mutex<DatabaseConnection>>,
     pub state: Arc<Mutex<ScannerState>>,
-    pub task_queue: Arc<Mutex<LinkedList<(ScanningMode, Duration)>>>,
+    pub mode_queue: Arc<Mutex<LinkedList<(ScanningMode, Duration)>>>,
+    pub action_queue: Arc<Mutex<LinkedList<Action>>>,
 }
 
 pub async fn start_server(
     db: Arc<Mutex<DatabaseConnection>>,
     state: Arc<Mutex<ScannerState>>,
-    task_queue: Arc<Mutex<LinkedList<(ScanningMode, Duration)>>>,
+    mode_queue: Arc<Mutex<LinkedList<(ScanningMode, Duration)>>>,
+    action_queue: Arc<Mutex<LinkedList<Action>>>,
 ) -> eyre::Result<()> {
     #[cfg(debug_assertions)]
     tracing_subscriber::registry()
@@ -45,7 +47,8 @@ pub async fn start_server(
     let server_state = ServerState {
         db,
         state,
-        task_queue,
+        mode_queue,
+        action_queue,
     };
 
     let routes = Router::new()
@@ -95,12 +98,13 @@ async fn get_static_file(uri: Uri) -> Result<Response<BoxBody>, (StatusCode, Str
         .body(Body::empty())
         .unwrap();
     let res = match ServiceExt::oneshot(ServeDir::new("web/build"), req).await {
-        Ok(res) => Ok(res.map(boxed)),
-        Err(err) => Err((
-            StatusCode::INTERNAL_SERVER_ERROR,
-            format!("Something went wrong: {}", err),
-        )),
+        Ok(res) => res.map(boxed),
+        Err(err) => {
+            return Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Something went wrong: {}", err),
+            ))
+        }
     };
-    println!("uri = {:?}, res = {:?}", uri, res);
-    res
+    Ok(res)
 }
