@@ -13,11 +13,6 @@ use std::{
 };
 use tokio::sync::Mutex;
 
-#[cfg(debug_assertions)]
-use snowstorm::io::database::DatabaseScanner;
-#[cfg(not(debug_assertions))]
-use snowstorm::io::network::NetworkScanner;
-
 #[tokio::main]
 async fn main() -> eyre::Result<()> {
     dotenv::dotenv()?;
@@ -29,9 +24,9 @@ async fn main() -> eyre::Result<()> {
     let action_queue = Arc::new(Mutex::new(LinkedList::new()));
 
     #[cfg(debug_assertions)]
-    let pinger = DatabaseScanner::new(state.clone(), ping_results_sender);
+    let pinger = snowstorm::io::database::DatabaseScanner::new(state.clone(), ping_results_sender);
     #[cfg(not(debug_assertions))]
-    let pinger = NetworkScanner {
+    let pinger = snowstorm::io::network::NetworkScanner {
         state: state.clone(),
         sender: ping_results_sender,
     };
@@ -78,8 +73,8 @@ async fn ping_loop<T: Io>(
     pinger: T,
 ) -> eyre::Result<()> {
     let mut cursors = ModeCursors::new();
-    let mut mode = ScanningMode::Paused;
-    let mut current_mode_duration = Duration::from_millis(1000);
+    let mut mode = ScanningMode::Paused();
+    let mut current_mode_duration = Duration::MAX;
 
     let mut time = Instant::now();
     loop {
@@ -104,9 +99,9 @@ async fn ping_loop<T: Io>(
                 current_mode_duration = duration;
             } else {
                 match &mode {
-                    ScanningMode::Auto => {}
-                    ScanningMode::Paused | ScanningMode::Rescan(..) => {
-                        mode = ScanningMode::Paused;
+                    ScanningMode::Auto() => {}
+                    ScanningMode::Paused() | ScanningMode::Rescan(..) => {
+                        mode = ScanningMode::Paused();
                         current_mode_duration = Duration::MAX;
                     }
                     _ => {
@@ -118,11 +113,11 @@ async fn ping_loop<T: Io>(
         }
 
         match mode {
-            ScanningMode::Paused => {}
-            ScanningMode::Discovery => {
+            ScanningMode::Paused() => {}
+            ScanningMode::Discovery() => {
                 modes::discovery(&pinger, &mut cursors.discovery).await?;
             }
-            ScanningMode::DiscoveryTopPorts => {
+            ScanningMode::DiscoveryTopPorts() => {
                 modes::discovery_top(&pinger, &mut cursors.discovery_top_ports).await?;
             }
             ScanningMode::Range(ref range) => {
@@ -137,7 +132,7 @@ async fn ping_loop<T: Io>(
             ScanningMode::Rescan(ref ips) => {
                 modes::rescan(&pinger, &mut cursors.rescan, ips).await?;
             }
-            ScanningMode::Auto => {
+            ScanningMode::Auto() => {
                 modes::auto(&pinger, &mut cursors).await?;
             }
         }
@@ -149,18 +144,18 @@ async fn ping_loop<T: Io>(
                         mode = new_mode;
                         current_mode_duration = duration;
                     }
-                    Action::Skip => {
+                    Action::Skip() => {
                         current_mode_duration = Duration::ZERO;
                     }
-                    Action::Clear => {
-                        mode = ScanningMode::Paused;
+                    Action::Clear() => {
+                        mode = ScanningMode::Paused();
                         current_mode_duration = Duration::MAX;
                         mode_queue.lock().await.clear();
                     }
-                    Action::Pause => {
+                    Action::Pause() => {
                         let remaining = current_mode_duration - delta;
                         mode_queue.lock().await.push_front((mode, remaining));
-                        mode = ScanningMode::Paused;
+                        mode = ScanningMode::Paused();
                         current_mode_duration = Duration::MAX;
                     }
                     Action::Dequeue(index) => {

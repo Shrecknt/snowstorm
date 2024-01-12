@@ -60,7 +60,7 @@ impl Io for NetworkScanner {
 
         if let Ok(ClientboundStatusPacket::StatusResponse(ping_response)) = clientbound_status {
             let ping_result = PingResult::from_azalea(addr, port, &ping_response);
-            let player_info = PlayerInfo::from_azalea(addr, port, &ping_response);
+            let player_info = PlayerInfo::from_azalea(&ping_response);
             self.sender.send((ping_result, player_info))?;
         };
 

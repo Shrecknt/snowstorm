@@ -18,6 +18,7 @@ use tracing_subscriber::prelude::*;
 pub mod authentication;
 pub mod jwt;
 
+mod actions;
 mod oauth;
 mod ws;
 
@@ -58,6 +59,7 @@ pub async fn start_server(
         .route("/auth/signup", post(authentication::create_account))
         .route("/auth/discord", post(oauth::link_account))
         .route("/auth/info", get(authentication::info))
+        .route("/actions", post(actions::web_actions_handler))
         .route("/oauth2", get(oauth::oauth2));
     #[cfg(debug_assertions)]
     let routes = routes.layer(

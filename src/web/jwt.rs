@@ -5,16 +5,16 @@ use time::{Duration, OffsetDateTime};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct UserSession {
-    user_id: i32,
+    user_id: i64,
     exp: OffsetDateTime,
 }
 
 impl UserSession {
-    pub fn new_default(user_id: i32) -> Self {
+    pub fn new_default(user_id: i64) -> Self {
         Self::new(user_id, OffsetDateTime::now_utc() + Duration::hours(3))
     }
 
-    pub fn new(user_id: i32, exp: OffsetDateTime) -> Self {
+    pub fn new(user_id: i64, exp: OffsetDateTime) -> Self {
         Self { user_id, exp }
     }
 

@@ -5,9 +5,9 @@ use sqlx::{PgPool, Row};
 #[derive(sqlx::FromRow, Deserialize, Serialize, Debug)]
 pub struct DiscordUserInfo {
     #[serde(skip)]
-    pub id: Option<i32>,
+    pub id: Option<i64>,
     #[serde(skip)]
-    pub user_id: Option<i32>,
+    pub user_id: Option<i64>,
     #[serde(skip)]
     pub link_code: Option<String>,
     #[serde(rename = "id")]
@@ -32,40 +32,28 @@ pub struct DiscordUserInfo {
 }
 
 impl DiscordUserInfo {
-    pub async fn get_id(id: i32, pool: &PgPool) -> Option<Self> {
-        match sqlx::query_as("SELECT * FROM discord_users WHERE id = $1::SERIAL")
+    pub async fn get_id(id: i64, pool: &PgPool) -> Option<Self> {
+        sqlx::query_as("SELECT * FROM discord_users WHERE id = $1::BIGINT")
             .bind(id)
             .fetch_optional(pool)
             .await
-        {
-            Ok(user) => user,
-            Err(_) => None,
-        }
+            .unwrap()
     }
 
     pub async fn get_discord_id(discord_id: &str, pool: &PgPool) -> Option<Self> {
-        match sqlx::query_as("SELECT * FROM discord_users WHERE discord_id = $1::TEXT")
+        sqlx::query_as("SELECT * FROM discord_users WHERE discord_id = $1::TEXT")
             .bind(discord_id)
             .fetch_optional(pool)
             .await
-        {
-            Ok(user) => user,
-            Err(_) => None,
-        }
+            .unwrap()
     }
 
     pub async fn get_link_code(link_code: &str, pool: &PgPool) -> Option<Self> {
-        match sqlx::query_as("SELECT * FROM discord_users WHERE link_code = $1::TEXT")
+        sqlx::query_as("SELECT * FROM discord_users WHERE link_code = $1::TEXT")
             .bind(link_code)
             .fetch_optional(pool)
             .await
-        {
-            Ok(user) => {
-                println!("user = {user:?}");
-                user
-            }
-            Err(_) => None,
-        }
+            .unwrap()
     }
 }
 
@@ -74,14 +62,14 @@ impl DbPush for DiscordUserInfo {
         let query = match self.id {
             Some(_) => {
                 "UPDATE discord_users SET
-                    user_id = $2::INT,
+                    user_id = $2::BIGINT,
                     discord_id = $3::TEXT,
                     username = $4::TEXT,
                     discriminator = $5::TEXT,
                     global_name = $6::TEXT,
                     link_code = $7::TEXT
                 WHERE
-                    id = $1::INT"
+                    id = $1::BIGINT"
             }
             None => {
                 "INSERT INTO discord_users (
@@ -92,7 +80,7 @@ impl DbPush for DiscordUserInfo {
                     global_name,
                     link_code
                 ) VALUES (
-                    $2::INT,
+                    $2::BIGINT,
                     $3::TEXT,
                     $4::TEXT,
                     $5::TEXT,
@@ -117,7 +105,7 @@ impl DbPush for DiscordUserInfo {
                 .bind(&self.discord_id)
                 .fetch_one(pool)
                 .await?;
-            let new_id: i32 = new_id.get("id");
+            let new_id: i64 = new_id.get("id");
             self.id = Some(new_id);
         }
 

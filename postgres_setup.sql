@@ -2,7 +2,7 @@ DROP TABLE IF EXISTS users CASCADE;
 DROP TABLE IF EXISTS discord_users CASCADE;
 
 CREATE TABLE users (
-	id SERIAL NOT NULL,
+	id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
 	username TEXT NOT NULL,
 	password TEXT NOT NULL,
 	UNIQUE (id),
@@ -10,8 +10,8 @@ CREATE TABLE users (
 );
 
 CREATE TABLE discord_users (
-	id SERIAL NOT NULL,
-	user_id INT,
+	id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+	user_id BIGINT,
 	discord_id TEXT NOT NULL,
 	username TEXT NOT NULL,
 	discriminator TEXT NOT NULL,
@@ -28,7 +28,7 @@ DROP TABLE IF EXISTS servers CASCADE;
 DROP TABLE IF EXISTS players CASCADE;
 
 CREATE TABLE servers (
-    id BIGINT NOT NULL,
+    id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
 	ip INT NOT NULL,
 	port SMALLINT NOT NULL,
     version_name TEXT,
@@ -43,15 +43,14 @@ CREATE TABLE servers (
 );
 
 CREATE TABLE players (
-	id SERIAL NOT NULL,
+	id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
 	uuid UUID NOT NULL,
     username TEXT NOT NULL,
-	UNIQUE (uuid),
-	CONSTRAINT players_pkey PRIMARY KEY (id)
+	UNIQUE (uuid)
 );
 
 CREATE TABLE join_table (
-	server_id SERIAL NOT NULL,
+	server_id BIGINT NOT NULL,
 	player_id BIGINT NOT NULL,
 	discovered BIGINT NOT NULL DEFAULT EXTRACT(epoch from now()),
 	last_seen BIGINT NOT NULL DEFAULT EXTRACT(epoch from now()),

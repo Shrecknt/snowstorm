@@ -1,59 +1,112 @@
+use super::DbPush;
 use azalea_protocol::packets::status::clientbound_status_response_packet::ClientboundStatusResponsePacket;
 use serde::Serialize;
-use std::net::Ipv4Addr;
+use sqlx::{prelude::FromRow, PgPool, Row};
+use std::time::{SystemTime, UNIX_EPOCH};
 use uuid::Uuid;
 
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, FromRow)]
 pub struct PlayerInfo {
-    pub name: String,
-    pub uuid: Uuid,
     #[serde(skip)]
-    pub server: Option<(Ipv4Addr, u16)>,
+    pub id: Option<i64>,
+    pub uuid: Uuid,
+    pub username: String,
+    #[serde(skip)]
+    pub server: Option<i64>,
 }
 
 impl PlayerInfo {
-    pub fn new(name: String, uuid: Uuid) -> Self {
+    pub fn new(username: String, uuid: Uuid) -> Self {
         Self {
-            name,
+            id: None,
             uuid,
+            username,
             server: None,
         }
     }
 
-    pub fn from_username(name: String) -> Self {
-        #[allow(unreachable_code)]
-        Self {
-            name,
-            uuid: todo!(),
-            server: None,
-        }
+    pub async fn from_username(username: &str, pool: &PgPool) -> Option<Self> {
+        sqlx::query_as("SELECT * FROM players WHERE username = $1::TEXT")
+            .bind(username)
+            .fetch_optional(pool)
+            .await
+            .unwrap()
     }
 
-    pub fn from_uuid(uuid: Uuid) -> Self {
-        #[allow(unreachable_code)]
-        Self {
-            uuid,
-            name: todo!(),
-            server: None,
-        }
+    pub async fn from_uuid(uuid: Uuid, pool: &PgPool) -> Option<Self> {
+        sqlx::query_as("SELECT * FROM players WHERE uuid = $1::UUID")
+            .bind(uuid)
+            .fetch_optional(pool)
+            .await
+            .unwrap()
     }
 
-    pub fn from_azalea(
-        ip: Ipv4Addr,
-        port: u16,
-        value: &ClientboundStatusResponsePacket,
-    ) -> Vec<Self> {
+    pub fn from_azalea(value: &ClientboundStatusResponsePacket) -> Vec<Self> {
         let mut players = Vec::with_capacity(value.players.sample.len());
         for player in &value.players.sample {
             let Ok(uuid) = Uuid::parse_str(&player.id) else {
                 continue;
             };
             players.push(Self {
-                name: player.name.clone(),
+                id: None,
+                username: player.name.clone(),
                 uuid,
-                server: Some((ip, port)),
+                server: None,
             });
         }
         players
+    }
+}
+
+impl DbPush for PlayerInfo {
+    async fn push(&mut self, pool: &sqlx::PgPool) -> Result<(), eyre::Report> {
+        const QUERY: &str = "INSERT INTO players (
+                uuid,
+                username
+            ) VALUES (
+                $2::UUID,
+                $3::TEXT
+            )
+            ON CONFLICT (uuid) DO UPDATE SET
+                username = excluded.username
+            RETURNING id";
+        let new_id: i64 = sqlx::query(QUERY)
+            .bind(self.id)
+            .bind(self.uuid)
+            .bind(self.username.clone())
+            .fetch_one(pool)
+            .await?
+            .get("id");
+        self.id = Some(new_id);
+
+        if let Some(server_id) = self.server {
+            sqlx::query(
+                "INSERT INTO join_table (
+                server_id,
+                player_id,
+                discovered,
+                last_seen
+            ) VALUES (
+                $1::BIGINT,
+                $2::BIGINT,
+                $3::BIGINT,
+                $3::BIGINT
+            ) ON CONFLICT (server_id, player_id) DO UPDATE SET
+                last_seen = excluded.last_seen
+            ",
+            )
+            .bind(server_id)
+            .bind(new_id)
+            .bind(
+                SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .expect("Time went backwards")
+                    .as_secs() as i64,
+            )
+            .execute(pool)
+            .await?;
+        }
+
+        Ok(())
     }
 }
