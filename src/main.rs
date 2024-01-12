@@ -1,7 +1,7 @@
 #![feature(linked_list_remove)]
 
 use snowstorm::{
-    database::DatabaseConnection,
+    database::{DatabaseConnection, DbPush},
     io::Io,
     modes::{self, ModeCursors, ScanningMode},
     web, Action, ScannerState,
@@ -55,11 +55,21 @@ async fn main() -> eyre::Result<()> {
         });
     }
 
-    for (result, players) in ping_results {
-        println!(
-            "{{ ip = '{}:{}', players = '{:?}' }}",
-            result.ip, result.port, players
-        );
+    {
+        const BATCH_SIZE: usize = 64;
+        let db = db.clone();
+        let mut chunks = Vec::with_capacity(BATCH_SIZE);
+        for result in ping_results {
+            let chunks = &mut chunks;
+            chunks.push(result);
+            if chunks.len() >= BATCH_SIZE {
+                let pool = &db.lock().await.pool;
+                for chunk in chunks.iter_mut() {
+                    chunk.push(pool).await?;
+                }
+                chunks.clear();
+            }
+        }
     }
 
     Ok(())
