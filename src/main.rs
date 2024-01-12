@@ -17,7 +17,7 @@ use tokio::sync::Mutex;
 async fn main() -> eyre::Result<()> {
     dotenv::dotenv()?;
 
-    let db = Arc::new(Mutex::new(DatabaseConnection::new().await?));
+    let db = DatabaseConnection::new().await?;
     let state = Arc::new(Mutex::new(ScannerState::default()));
     let (ping_results_sender, ping_results) = channel();
     let mode_queue = Arc::new(Mutex::new(LinkedList::new()));
@@ -63,7 +63,7 @@ async fn main() -> eyre::Result<()> {
             let chunks = &mut chunks;
             chunks.push(result);
             if chunks.len() >= BATCH_SIZE {
-                let pool = &db.lock().await.pool;
+                let pool = &db.pool;
                 for chunk in chunks.iter_mut() {
                     chunk.push(pool).await?;
                 }
@@ -76,7 +76,7 @@ async fn main() -> eyre::Result<()> {
 }
 
 async fn ping_loop<T: Io>(
-    db: Arc<Mutex<DatabaseConnection>>,
+    db: DatabaseConnection,
     state: Arc<Mutex<ScannerState>>,
     mode_queue: Arc<Mutex<LinkedList<(ScanningMode, Duration)>>>,
     action_queue: Arc<Mutex<LinkedList<Action>>>,
@@ -115,7 +115,7 @@ async fn ping_loop<T: Io>(
                         current_mode_duration = Duration::MAX;
                     }
                     _ => {
-                        let rescan_data = db.lock().await.get_rescan().await.unwrap();
+                        let rescan_data = db.get_rescan().await.unwrap();
                         mode = ScanningMode::Rescan(rescan_data);
                     }
                 }

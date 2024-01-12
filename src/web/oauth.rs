@@ -30,7 +30,7 @@ pub async fn oauth2(
 ) -> impl IntoResponse {
     match try_oauth(oauth2_parameters.0.clone()).await {
         Ok((_result, mut discord_user_info, _discord_guild_member)) => {
-            let db = server_state.0.db.lock().await;
+            let db = server_state.0.db;
             let pool = &db.pool;
 
             if let Some(discord_user) =
@@ -77,7 +77,7 @@ pub async fn link_account(
     cookies: Option<TypedHeader<headers::Cookie>>,
     credentials: Form<LoginInput>,
 ) -> impl IntoResponse {
-    let db = server_state.0.db.lock().await;
+    let db = server_state.0.db;
     let pool = &db.pool;
     let credentials = credentials.0.clone();
 

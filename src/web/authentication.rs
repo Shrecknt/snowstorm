@@ -37,7 +37,7 @@ pub async fn login(
     server_state: State<ServerState>,
     credentials: Form<LoginInput>,
 ) -> impl IntoResponse {
-    let db = server_state.db.lock().await;
+    let db = server_state.0.db;
     let pool = &db.pool;
     let credentials = credentials.0.clone();
 
@@ -69,7 +69,7 @@ pub async fn create_account(
     server_state: State<ServerState>,
     credentials: Form<LoginInput>,
 ) -> impl IntoResponse {
-    let db = server_state.0.db.lock().await;
+    let db = server_state.0.db;
     let pool = &db.pool;
     let credentials = credentials.0.clone();
 

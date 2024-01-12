@@ -24,14 +24,14 @@ mod ws;
 
 #[derive(Clone)]
 pub struct ServerState {
-    pub db: Arc<Mutex<DatabaseConnection>>,
+    pub db: DatabaseConnection,
     pub state: Arc<Mutex<ScannerState>>,
     pub mode_queue: Arc<Mutex<LinkedList<(ScanningMode, Duration)>>>,
     pub action_queue: Arc<Mutex<LinkedList<Action>>>,
 }
 
 pub async fn start_server(
-    db: Arc<Mutex<DatabaseConnection>>,
+    db: DatabaseConnection,
     state: Arc<Mutex<ScannerState>>,
     mode_queue: Arc<Mutex<LinkedList<(ScanningMode, Duration)>>>,
     action_queue: Arc<Mutex<LinkedList<Action>>>,

@@ -1,9 +1,9 @@
 use sqlx::{postgres::PgPoolOptions, PgPool, Row};
 use std::net::Ipv4Addr;
 
+#[derive(Clone)]
 pub struct DatabaseConnection {
     pub pool: PgPool,
-    pub cursor: Option<(Ipv4Addr, u16)>,
 }
 
 impl DatabaseConnection {
@@ -14,7 +14,7 @@ impl DatabaseConnection {
                 &std::env::var("POSTGRES_URL").expect("No `POSTGRES_URL` environment variable"),
             )
             .await?;
-        Ok(Self { pool, cursor: None })
+        Ok(Self { pool })
     }
 
     pub async fn get_rescan(&self) -> eyre::Result<Vec<(Ipv4Addr, u16)>> {
