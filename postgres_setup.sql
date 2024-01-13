@@ -45,8 +45,8 @@ CREATE TABLE servers (
 CREATE TABLE players (
 	id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
 	uuid UUID NOT NULL,
-    username TEXT NOT NULL,
-	UNIQUE (uuid)
+	username TEXT NOT NULL,
+	UNIQUE (uuid, username)
 );
 
 CREATE TABLE join_table (

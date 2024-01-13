@@ -56,19 +56,9 @@ async fn main() -> eyre::Result<()> {
     }
 
     {
-        const BATCH_SIZE: usize = 64;
         let db = db.clone();
-        let mut chunks = Vec::with_capacity(BATCH_SIZE);
-        for result in ping_results {
-            let chunks = &mut chunks;
-            chunks.push(result);
-            if chunks.len() >= BATCH_SIZE {
-                let pool = &db.pool;
-                for chunk in chunks.iter_mut() {
-                    chunk.push(pool).await?;
-                }
-                chunks.clear();
-            }
+        for mut result in ping_results {
+            result.push(&db.pool).await?;
         }
     }
 

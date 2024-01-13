@@ -67,8 +67,7 @@ impl DbPush for PlayerInfo {
                 $2::UUID,
                 $3::TEXT
             )
-            ON CONFLICT (uuid) DO UPDATE SET
-                username = excluded.username
+            ON CONFLICT (uuid, username) DO NOTHING
             RETURNING id";
         let new_id: i64 = sqlx::query(QUERY)
             .bind(self.id)
