@@ -2,7 +2,7 @@
 
 mass surveillance for block game
 
-![banner](assets/banner.png)
+![banner](assets/banner.jpg)
 
 ### Yet another Minecraft server scanner
 
