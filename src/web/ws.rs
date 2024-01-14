@@ -1,7 +1,10 @@
 use super::ServerState;
-use crate::web::{
-    actions::{actions_handler, WebActions},
-    jwt::UserSession,
+use crate::{
+    database::user::User,
+    web::{
+        actions::{actions_handler, WebActions},
+        jwt::UserSession,
+    },
 };
 use axum::{
     extract::{
@@ -26,7 +29,7 @@ pub async fn ws_handler(
     let user = match UserSession::from_cookies(&cookies) {
         Some(Ok(session)) => {
             if session.is_valid() {
-                Some(session)
+                Some(session.user(&server_state.db.pool).await)
             } else {
                 None
             }
@@ -42,6 +45,7 @@ pub async fn ws_handler(
         String::from("Unknown browser")
     };
     println!("`{user_agent}` at {addr} connected.");
+
     ws.on_upgrade(move |socket| handle_socket(socket, addr, server_state, user))
 }
 
@@ -49,7 +53,7 @@ async fn handle_socket(
     mut socket: WebSocket,
     who: SocketAddr,
     server_state: State<ServerState>,
-    user: Option<UserSession>,
+    user: Option<User>,
 ) {
     let _ = socket.send(Message::Ping(vec![1, 2, 3])).await;
 
@@ -77,9 +81,18 @@ async fn handle_socket(
                     }
                 };
 
-                if user.is_some() {
-                    let result = actions_handler(action, &server_state).await;
-                    let _ = socket.send(Message::Text(result.to_string())).await;
+                if let Some(user) = &user {
+                    if user.permission_level >= 1 {
+                        let result = actions_handler(action, &server_state).await;
+                        let _ = socket.send(Message::Text(result.to_string())).await;
+                    } else {
+                        let _ = socket
+                            .send(Message::Text(
+                                json!({"success": false, "msg": "insufficient permissions"})
+                                    .to_string(),
+                            ))
+                            .await;
+                    }
                 } else {
                     let _ = socket
                         .send(Message::Text(

@@ -5,6 +5,7 @@ CREATE TABLE users (
 	id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
 	username TEXT NOT NULL,
 	password TEXT NOT NULL,
+	permission_level INT NOT NULL DEFAULT 0,
 	UNIQUE (id),
 	UNIQUE (username)
 );

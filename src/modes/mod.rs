@@ -30,21 +30,21 @@ lazy_static! {
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub enum ScanningMode {
     /// Don't ping any servers - This can be enabled from the web ui
-    Paused(),
+    Paused {},
     /// Ping port 25565 on all allowed IPs
-    Discovery(),
+    Discovery {},
     /// Ping top 8 common ports on all allowed IPs
-    DiscoveryTopPorts(),
+    DiscoveryTopPorts {},
     /// Ping port 25565 on all IPs in a given range
-    Range(Ipv4AddrRange),
+    Range { range: Ipv4AddrRange },
     /// Ping top 8 common ports on all IPs in a given range
-    RangeTopPorts(Ipv4AddrRange),
+    RangeTopPorts { range: Ipv4AddrRange },
     /// Ping all allowed ports on a single IP
-    AllPorts(Ipv4Addr),
+    AllPorts { ip: Ipv4Addr },
     /// Ping all servers in the database
-    Rescan(Vec<(Ipv4Addr, u16)>),
+    Rescan { ips: Vec<(Ipv4Addr, u16)> },
     /// Automatically chose and switch between modes
-    Auto(),
+    Auto {},
 }
 
 #[derive(Debug)]

@@ -26,10 +26,18 @@ impl Default for ScannerState {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Action {
-    SetMode(ScanningMode, Duration),
-    Skip(),
-    Clear(),
-    Pause(),
-    Dequeue(usize),
-    Enqueue(ScanningMode, Duration),
+    SetMode {
+        mode: ScanningMode,
+        duration: Duration,
+    },
+    Skip {},
+    Clear {},
+    Pause {},
+    Dequeue {
+        index: usize,
+    },
+    Enqueue {
+        mode: ScanningMode,
+        duration: Duration,
+    },
 }

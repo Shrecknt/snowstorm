@@ -9,9 +9,20 @@ use std::{
 };
 use tokio::sync::Mutex;
 
+mod receive;
+
 pub struct PnetScanner {
     pub state: Arc<Mutex<ScannerState>>,
-    pub sender: Sender<(PingResult, Vec<PlayerInfo>)>,
+}
+
+impl PnetScanner {
+    pub fn new(
+        state: Arc<Mutex<ScannerState>>,
+        sender: Sender<(PingResult, Vec<PlayerInfo>)>,
+    ) -> Self {
+        tokio::spawn(async move { receive::start_server(sender).await });
+        Self { state }
+    }
 }
 
 impl Io for PnetScanner {

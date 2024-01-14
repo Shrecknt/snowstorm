@@ -15,10 +15,10 @@ use tower_http::trace::{DefaultMakeSpan, TraceLayer};
 #[cfg(debug_assertions)]
 use tracing_subscriber::prelude::*;
 
+pub mod actions;
 pub mod authentication;
 pub mod jwt;
 
-mod actions;
 mod oauth;
 mod ws;
 

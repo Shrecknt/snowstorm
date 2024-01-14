@@ -1,12 +1,15 @@
 use axum::{headers, TypedHeader};
 use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
+use sqlx::PgPool;
 use time::{Duration, OffsetDateTime};
+
+use crate::database::user::User;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct UserSession {
-    user_id: i64,
-    exp: OffsetDateTime,
+    pub user_id: i64,
+    pub exp: OffsetDateTime,
 }
 
 impl UserSession {
@@ -53,5 +56,11 @@ impl UserSession {
         } else {
             None
         }
+    }
+
+    pub async fn user(&self, pool: &PgPool) -> User {
+        User::get_id(self.user_id, pool)
+            .await
+            .expect("no user found for valid user id")
     }
 }

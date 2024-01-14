@@ -6,6 +6,7 @@ pub struct User {
     pub id: Option<i64>,
     pub username: String,
     pub password: String,
+    pub permission_level: i32,
 }
 
 impl User {
@@ -14,6 +15,7 @@ impl User {
             id: None,
             username: username.to_string(),
             password: password.to_string(),
+            permission_level: 0,
         }
     }
 
