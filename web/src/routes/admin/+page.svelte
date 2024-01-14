@@ -25,6 +25,10 @@
 		});
 		ws.addEventListener('message', (message) => {
 			const obj = JSON.parse(message.data) as ActionResponse;
+			if (!obj.success) {
+				console.log('An error occurred!', obj.msg);
+				return;
+			}
 			if (obj.queue) {
 				let queueItems: { type: string; duration: Duration }[] = [];
 				for (let item of obj.queue) {

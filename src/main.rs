@@ -8,10 +8,14 @@ use snowstorm::{
 };
 use std::{
     collections::LinkedList,
-    sync::{mpsc::channel, Arc},
+    sync::{
+        mpsc::{channel, Sender},
+        Arc,
+    },
+    thread,
     time::{Duration, Instant},
 };
-use tokio::sync::Mutex;
+use tokio::{runtime::Runtime, sync::Mutex};
 
 #[tokio::main]
 async fn main() -> eyre::Result<()> {
@@ -73,14 +77,18 @@ async fn main() -> eyre::Result<()> {
     const CHANNEL_COUNT: usize = 8;
 
     let ping_handlers = {
-        let mut handlers = Vec::with_capacity(CHANNEL_COUNT);
+        let mut handlers: Vec<Sender<_>> = Vec::with_capacity(CHANNEL_COUNT);
         for _ in 0..CHANNEL_COUNT {
             let db = db.clone();
             let (w, r) = channel::<(PingResult, Vec<PlayerInfo>)>();
             handlers.push(w);
-            tokio::spawn(async move {
+            thread::spawn(move || {
+                let r = r;
                 while let Ok(mut values) = r.recv() {
-                    values.push(&db.pool).await.unwrap();
+                    Runtime::new()
+                        .unwrap()
+                        .block_on(values.push(&db.pool))
+                        .unwrap();
                 }
             });
         }
