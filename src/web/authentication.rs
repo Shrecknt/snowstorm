@@ -20,7 +20,7 @@ impl LoginInput {
     pub fn is_valid(&self) -> bool {
         const ALLOWED_SYMBOLS: [char; 2] = ['_', '-'];
         (3..=16).contains(&self.username.len())
-            && (6..=16).contains(&self.password.len())
+            && (6..=64).contains(&self.password.len())
             && self
                 .username
                 .chars()

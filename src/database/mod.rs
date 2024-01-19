@@ -4,6 +4,7 @@ use self::{player::PlayerInfo, server::PingResult};
 
 pub mod database_connection;
 pub mod discord_user;
+pub mod forgejo_user;
 pub mod player;
 pub mod server;
 pub mod user;

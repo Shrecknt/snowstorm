@@ -8,7 +8,6 @@ axum = { version = "0.6.20", features = ["macros", "ws", "headers"] }
 bcrypt = "0.15.0"
 boringtun = "0.6.0"
 csv = "1.3.0"
-dotenv = "0.15.0"
 eyre = "0.6.9"
 jsonwebtoken = "9.2.0"
 lazy_static = "1.4.0"
@@ -33,3 +32,6 @@ urlencoding = "2.1.3"
 uuid = { version = "1.6.1", features = ["serde", "rand", "v4"] }
 azalea-protocol = { git = "https://github.com/azalea-rs/azalea.git" }
 bytes = "1.5.0"
+dotenvy = { version = "0.15.7", features = ["clap"] }
+clap = { version = "4.4.17", features = ["derive"] }
+dotenvy_macro = "0.15.7"

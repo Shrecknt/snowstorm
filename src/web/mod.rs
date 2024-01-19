@@ -5,6 +5,7 @@ use axum::{
     routing::{get, post},
     Router,
 };
+use dotenvy_macro::dotenv as var;
 use reqwest::StatusCode;
 use std::{collections::LinkedList, net::SocketAddr, str::FromStr, sync::Arc, time::Duration};
 use tokio::sync::Mutex;
@@ -57,17 +58,20 @@ pub async fn start_server(
         .route("/ws", get(ws::ws_handler))
         .route("/auth/login", post(authentication::login))
         .route("/auth/signup", post(authentication::create_account))
-        .route("/auth/discord", post(oauth::link_account))
+        .route("/auth/discord", post(oauth::discord::link_account))
+        .route("/auth/forgejo", post(oauth::forgejo::link_account))
         .route("/auth/info", get(authentication::info))
         .route("/actions", post(actions::web_actions_handler))
-        .route("/oauth2", get(oauth::oauth2));
+        .route("/oauth2", get(oauth::discord::oauth2))
+        .route("/oauth2_discord", get(oauth::discord::oauth2))
+        .route("/oauth2_forgejo", get(oauth::forgejo::oauth2));
     #[cfg(debug_assertions)]
     let routes = routes.layer(
         TraceLayer::new_for_http().make_span_with(DefaultMakeSpan::default().include_headers(true)),
     );
     let routes = routes.with_state(server_state);
 
-    let listener = SocketAddr::from_str(&std::env::var("WEB_LISTEN_URL")?)?;
+    let listener = SocketAddr::from_str(var!("WEB_LISTEN_URL"))?;
     axum::Server::bind(&listener)
         .serve(routes.into_make_service_with_connect_info::<SocketAddr>())
         .await?;

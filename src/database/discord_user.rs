@@ -8,10 +8,10 @@ pub struct DiscordUserInfo {
     pub id: Option<i64>,
     #[serde(skip)]
     pub user_id: Option<i64>,
-    #[serde(skip)]
-    pub link_code: Option<String>,
     #[serde(rename = "id")]
     pub discord_id: String,
+    #[serde(skip)]
+    pub link_code: Option<String>,
     pub username: String,
     pub discriminator: String,
     pub global_name: Option<String>,

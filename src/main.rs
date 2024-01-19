@@ -1,5 +1,6 @@
 #![feature(linked_list_remove)]
 
+use dotenvy_macro::dotenv as var;
 use snowstorm::{
     database::{player::PlayerInfo, server::PingResult, DatabaseConnection, DbPush},
     io::Io,
@@ -19,28 +20,13 @@ use tokio::{runtime::Runtime, sync::Mutex};
 
 #[tokio::main]
 async fn main() -> eyre::Result<()> {
-    dotenv::dotenv()?;
-
-    let a = crate::web::actions::WebActions::QueueAction {
-        action: Action::Clear {},
-    };
-    let b = serde_json::to_string(&a)?;
-    println!("b: {b}");
+    dotenvy::dotenv().expect(".env file not found");
 
     let db = DatabaseConnection::new().await?;
     let state = Arc::new(Mutex::new(ScannerState::default()));
     let (ping_results_sender, ping_results) = channel();
     let mode_queue = Arc::new(Mutex::new(LinkedList::new()));
     let action_queue = Arc::new(Mutex::new(LinkedList::new()));
-
-    mode_queue
-        .lock()
-        .await
-        .push_back((ScanningMode::Auto {}, std::time::Duration::MAX));
-    mode_queue
-        .lock()
-        .await
-        .push_back((ScanningMode::Auto {}, std::time::Duration::MAX));
 
     #[cfg(debug_assertions)]
     let pinger = snowstorm::io::database::DatabaseScanner::new(state.clone(), ping_results_sender);
@@ -50,7 +36,7 @@ async fn main() -> eyre::Result<()> {
         sender: ping_results_sender,
     };
 
-    if std::env::var("PING").map(|v| v.to_lowercase()) == Ok("true".to_string()) {
+    if var!("PING").to_lowercase() == "true".to_string() {
         let db = db.clone();
         let state = state.clone();
         let mode_queue = mode_queue.clone();
@@ -62,7 +48,7 @@ async fn main() -> eyre::Result<()> {
         });
     }
 
-    if std::env::var("WEB").map(|v| v.to_lowercase()) == Ok("true".to_string()) {
+    if var!("WEB").to_lowercase() == "true".to_string() {
         let db = db.clone();
         let state = state.clone();
         let mode_queue = mode_queue.clone();

@@ -3,6 +3,7 @@ use crate::{
     database::{player::PlayerInfo, server::PingResult},
     ScannerState,
 };
+use dotenvy_macro::dotenv as var;
 use std::{
     collections::BTreeSet,
     net::Ipv4Addr,
@@ -21,7 +22,7 @@ impl DatabaseScanner {
         state: Arc<Mutex<ScannerState>>,
         sender: Sender<(PingResult, Vec<PlayerInfo>)>,
     ) -> Self {
-        let data = csv::Reader::from_path(std::env::var("TESTING_DATA").unwrap())
+        let data = csv::Reader::from_path(var!("TESTING_DATA"))
             .unwrap()
             .records()
             .map(|item| {

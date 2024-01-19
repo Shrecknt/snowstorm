@@ -1,8 +1,10 @@
-use super::{
-    authentication::{get_auth_cookies, LoginInput},
-    ServerState,
+use crate::{
+    database::{discord_user::DiscordUserInfo, user::User, DbPush},
+    web::{
+        authentication::{get_auth_cookies, LoginInput},
+        ServerState,
+    },
 };
-use crate::database::{discord_user::DiscordUserInfo, user::User, DbPush};
 use axum::{
     extract::{Query, State},
     headers,
@@ -10,13 +12,14 @@ use axum::{
     response::{IntoResponse, Redirect},
     Form, TypedHeader,
 };
+use dotenvy_macro::dotenv as var;
 use oauth2::{
     basic::{BasicClient, BasicTokenType},
     AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken, EmptyExtraTokenFields,
     RedirectUrl, Scope, StandardTokenResponse, TokenResponse, TokenUrl,
 };
 use reqwest::header::SET_COOKIE;
-use serde::{Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 #[derive(Debug, Deserialize, Clone)]
@@ -127,10 +130,10 @@ async fn try_oauth(
     DiscordUserInfo,
     DiscordGuildMember,
 )> {
-    let redirect_uri = std::env::var("REDIRECT_URI").unwrap();
-    let client_id = std::env::var("CLIENT_ID").unwrap();
-    let client_secret = std::env::var("CLIENT_SECRET").unwrap();
-    let guild_id = std::env::var("GUILD_ID").unwrap();
+    let redirect_uri = var!("DISCORD_REDIRECT_URI");
+    let client_id = var!("DISCORD_CLIENT_ID");
+    let client_secret = var!("DISCORD_CLIENT_SECRET");
+    let guild_id = var!("DISCORD_GUILD_ID");
 
     let client = BasicClient::new(
         ClientId::new(client_id.to_string()),
@@ -188,16 +191,13 @@ pub struct DiscordUnknownGuildInfo {
 #[derive(Deserialize, Serialize, Debug)]
 pub struct DiscordGuildMemberInfo {
     pub avatar: Option<String>,
-    #[serde(deserialize_with = "deserialize_option")]
     pub communication_disabled_until: Option<time::OffsetDateTime>,
     pub flags: i32,
     pub joined_at: String,
     pub nick: Option<String>,
     pub pending: Option<bool>,
-    #[serde(deserialize_with = "deserialize_option")]
     pub premium_since: Option<time::OffsetDateTime>,
     pub roles: Vec<String>,
-    #[serde(deserialize_with = "deserialize_option")]
     pub unusual_dm_activity_until: Option<time::OffsetDateTime>,
     pub user: Option<DiscordUserInfo>,
     pub mute: bool,
@@ -205,11 +205,4 @@ pub struct DiscordGuildMemberInfo {
     pub bio: String,
     pub banner: Option<String>,
     pub permissions: Option<String>,
-}
-
-pub fn deserialize_option<'de, D>(deserializer: D) -> Result<Option<time::OffsetDateTime>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    Option::<time::OffsetDateTime>::deserialize(deserializer)
 }

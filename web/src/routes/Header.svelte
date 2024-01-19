@@ -9,7 +9,7 @@
 			display: inline-block;
 			width: 16px;
 			height: 16px;
-			background-image: url(forgejo.svg);
+			background-image: url(/forgejo.svg);
 			position: relative;
 			top: 2px;
 			right: 2px;

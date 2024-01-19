@@ -1,10 +1,10 @@
+use crate::database::user::User;
 use axum::{headers, TypedHeader};
+use dotenvy_macro::dotenv as var;
 use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use time::{Duration, OffsetDateTime};
-
-use crate::database::user::User;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct UserSession {
@@ -29,7 +29,7 @@ impl UserSession {
         jsonwebtoken::encode(
             &Header::default(),
             &self,
-            &EncodingKey::from_secret(std::env::var("JWT_SECRET").unwrap().as_ref()),
+            &EncodingKey::from_secret(var!("JWT_SECRET").as_ref()),
         )
     }
 
@@ -38,7 +38,7 @@ impl UserSession {
         validation.set_required_spec_claims::<String>(&[]);
         Ok(jsonwebtoken::decode::<Self>(
             token,
-            &DecodingKey::from_secret(std::env::var("JWT_SECRET").unwrap().as_ref()),
+            &DecodingKey::from_secret(var!("JWT_SECRET").as_ref()),
             &validation,
         )?
         .claims)

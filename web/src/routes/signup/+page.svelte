@@ -27,8 +27,12 @@
 		<a href="/login"><input type="button" value="Login &UpperRightArrow;" /></a>
 	</form>
 	<a
-		href="https://discord.com/oauth2/authorize?client_id=1077019155410202757&response_type=code&redirect_uri=https%3A%2F%2Fsnowstorm.shrecked.dev%2Foauth2&scope=identify+guilds.members.read"
+		href="https://discord.com/oauth2/authorize?client_id=1077019155410202757&response_type=code&redirect_uri=https%3A%2F%2Fsnowstorm.shrecked.dev%2Foauth2_discord&scope=identify+guilds.members.read"
 		><input type="button" value="Login with Discord" /></a
+	>
+	<a
+		href="https://git.shrecked.dev/login/oauth/authorize?client_id=2938b5c8-f959-479b-8afe-f6d528470f99&redirect_uri=https%3A%2F%2Fsnowstorm.shrecked.dev%2Foauth2_forgejo&response_type=code"
+		><input type="button" value="Login with Forgejo" /></a
 	>
 	<a href="/minecraft_login"><input type="button" value="Login with Minecraft" /></a>
 </div>
