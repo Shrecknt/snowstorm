@@ -101,20 +101,20 @@ impl DbPush for ForgejoUserInfo {
         sqlx::query(query)
             .bind(self.id)
             .bind(self.user_id)
-            .bind(&self.forgejo_id)
+            .bind(self.forgejo_id)
             .bind(&self.link_code)
             .bind(&self.username)
             .bind(&self.global_name)
-            .bind(&self.active)
-            .bind(&self.is_admin)
-            .bind(&self.prohibit_login)
-            .bind(&self.restricted)
+            .bind(self.active)
+            .bind(self.is_admin)
+            .bind(self.prohibit_login)
+            .bind(self.restricted)
             .execute(pool)
             .await?;
 
         if self.id.is_none() {
             let new_id = sqlx::query("SELECT id FROM forgejo_users WHERE forgejo_id = $1::BIGINT")
-                .bind(&self.forgejo_id)
+                .bind(self.forgejo_id)
                 .fetch_one(pool)
                 .await?;
             let new_id: i64 = new_id.get("id");

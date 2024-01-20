@@ -72,6 +72,7 @@ pub struct StatelessTcp {
 #[derive(Clone)]
 pub struct StatelessTcpWriteHalf {
     source_ip: Ipv4Addr,
+    #[allow(dead_code)]
     source_port: SourcePort,
 
     gateway_mac: Option<MacAddr>,

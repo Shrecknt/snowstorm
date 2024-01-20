@@ -33,7 +33,7 @@ async fn main() -> eyre::Result<()> {
     #[cfg(not(debug_assertions))]
     let pinger = snowstorm::io::pnet::PnetScanner::new(state.clone(), ping_results_sender);
 
-    if var!("PING").to_lowercase() == "true".to_string() {
+    if var!("PING").to_lowercase() == *"true" {
         let db = db.clone();
         let state = state.clone();
         let mode_queue = mode_queue.clone();
@@ -45,7 +45,7 @@ async fn main() -> eyre::Result<()> {
         });
     }
 
-    if var!("WEB").to_lowercase() == "true".to_string() {
+    if var!("WEB").to_lowercase() == *"true" {
         let db = db.clone();
         let state = state.clone();
         let mode_queue = mode_queue.clone();

@@ -32,7 +32,7 @@ impl PnetScanner {
         let source_port = SourcePort::Number(61000);
         let socket = StatelessTcp::new(source_port);
         let syn_writer = socket.write.clone();
-        tokio::spawn(async move { receive::start_server(socket, sender, source_port).await });
+        tokio::spawn(async move { receive::start_server(socket, sender).await });
         Self {
             state,
             syn_writer,
@@ -48,7 +48,7 @@ impl Io for PnetScanner {
         self.syn_writer.send_syn(
             addr,
             self.source_port.pick(addr_cookie),
-            addr_cookie + C2SSequenceNumbers::SlpSyn,
+            addr_cookie + C2SSequenceNumbers::SlpSynAck,
         );
         Ok(())
     }
@@ -59,7 +59,7 @@ impl Io for PnetScanner {
         self.syn_writer.send_syn(
             addr,
             self.source_port.pick(addr_cookie),
-            addr_cookie + C2SSequenceNumbers::LegacySyn,
+            addr_cookie + C2SSequenceNumbers::LegacySynAck,
         );
         Ok(())
     }

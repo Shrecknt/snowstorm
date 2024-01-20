@@ -25,12 +25,12 @@ macro_rules! constants {
 
 constants!(C2SSequenceNumbers {
     // Standard SLP
-    SlpSyn = 0x00000000,
-    SlpAck = 0x00000001,
+    SlpSynAck = 0x00000000,
+    SlpResponsePayload = 0x00000001,
 
     // Legacy
-    LegacySyn = 0x10000000,
-    LegacyAck = 0x10000001,
+    LegacySynAck = 0x10000000,
+    LegacyResponsePayload = 0x10000001,
 });
 
 constants!(C2SAcknowledgementNumbers {
@@ -44,15 +44,19 @@ constants!(C2SAcknowledgementNumbers {
 constants!(S2CSequenceNumbers {
     // Standard SLP
     SlpSynAck = 0x00000000,
+    SlpResponsePayload = 0x00000001,
 
     // Legacy
     LegacySynAck = 0x10000000,
+    LegacyResponsePayload = 0x10000001,
 });
 
 constants!(S2CAcknowledgementNumbers {
     // Standard SLP
     SlpSynAck = 0x00000001,
+    SlpResponsePayload = 0x00000021, // assumes ping payload is 32 bytes
 
     // Legacy
     LegacySynAck = 0x10000001,
+    LegacyResponsePayload = 0x10000004,
 });
