@@ -35,3 +35,7 @@ bytes = "1.5.0"
 dotenvy = { version = "0.15.7", features = ["clap"] }
 clap = { version = "4.4.17", features = ["derive"] }
 dotenvy_macro = "0.15.7"
+libc = "0.2.152"
+tracing = "0.1.40"
+default-net = "0.21.0"
+pnet_macros_support = "0.34.0"

@@ -6,7 +6,11 @@ use crate::{
 };
 
 #[allow(unused)]
-pub async fn range<T: Io>(pinger: &T, cursor: &mut u32, range: &Ipv4AddrRange) -> eyre::Result<()> {
+pub async fn range<T: Io>(
+    pinger: &mut T,
+    cursor: &mut u32,
+    range: &Ipv4AddrRange,
+) -> eyre::Result<()> {
     let mut ip = Ipv4Addr::from(*cursor);
 
     if !range.contains(ip) {

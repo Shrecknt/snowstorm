@@ -7,7 +7,7 @@ use std::net::Ipv4Addr;
 
 #[allow(unused)]
 pub async fn range_top<T: Io>(
-    pinger: &T,
+    pinger: &mut T,
     cursor: &mut u32,
     range: &Ipv4AddrRange,
 ) -> eyre::Result<()> {

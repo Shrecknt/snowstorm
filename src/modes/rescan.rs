@@ -2,7 +2,7 @@ use crate::{io::Io, util::exclude};
 use std::net::Ipv4Addr;
 
 pub async fn rescan<T: Io>(
-    pinger: &T,
+    pinger: &mut T,
     cursor: &mut usize,
     ips: &[(Ipv4Addr, u16)],
 ) -> eyre::Result<()> {

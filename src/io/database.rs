@@ -43,7 +43,7 @@ impl DatabaseScanner {
 }
 
 impl Io for DatabaseScanner {
-    async fn ping(&self, addr: Ipv4Addr, port: u16) -> eyre::Result<()> {
+    async fn ping(&mut self, addr: Ipv4Addr, port: u16) -> eyre::Result<()> {
         if self.data.contains(&(addr, port)) {
             self.state.lock().await.discovered += 1;
             self.sender
@@ -53,7 +53,7 @@ impl Io for DatabaseScanner {
         Ok(())
     }
 
-    async fn legacy_ping(&self, addr: Ipv4Addr, port: u16) -> eyre::Result<()> {
+    async fn legacy_ping(&mut self, addr: Ipv4Addr, port: u16) -> eyre::Result<()> {
         if self.data.contains(&(addr, port)) {
             self.state.lock().await.discovered += 1;
             self.sender

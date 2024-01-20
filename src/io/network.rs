@@ -30,7 +30,7 @@ pub struct NetworkScanner {
 }
 
 impl Io for NetworkScanner {
-    async fn ping(&self, addr: Ipv4Addr, port: u16) -> Result<(), eyre::Report> {
+    async fn ping(&mut self, addr: Ipv4Addr, port: u16) -> Result<(), eyre::Report> {
         let socket = TcpStream::connect(SocketAddr::new(addr.into(), port)).await?;
         socket.set_nodelay(true)?;
         let (socket_r, mut socket_w) = socket.into_split();
@@ -67,7 +67,7 @@ impl Io for NetworkScanner {
         Ok(())
     }
 
-    async fn legacy_ping(&self, _addr: Ipv4Addr, _port: u16) -> Result<(), eyre::Report> {
+    async fn legacy_ping(&mut self, _addr: Ipv4Addr, _port: u16) -> Result<(), eyre::Report> {
         todo!()
     }
 }

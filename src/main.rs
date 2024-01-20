@@ -31,10 +31,7 @@ async fn main() -> eyre::Result<()> {
     #[cfg(debug_assertions)]
     let pinger = snowstorm::io::database::DatabaseScanner::new(state.clone(), ping_results_sender);
     #[cfg(not(debug_assertions))]
-    let pinger = snowstorm::io::network::NetworkScanner {
-        state: state.clone(),
-        sender: ping_results_sender,
-    };
+    let pinger = snowstorm::io::pnet::PnetScanner::new(state.clone(), ping_results_sender);
 
     if var!("PING").to_lowercase() == "true".to_string() {
         let db = db.clone();
@@ -100,7 +97,7 @@ async fn ping_loop<T: Io>(
     state: Arc<Mutex<ScannerState>>,
     mode_queue: Arc<Mutex<LinkedList<(ScanningMode, Duration)>>>,
     action_queue: Arc<Mutex<LinkedList<Action>>>,
-    pinger: T,
+    mut pinger: T,
 ) -> eyre::Result<()> {
     let mut cursors = ModeCursors::new();
     let mut mode = ScanningMode::Paused {};
@@ -145,25 +142,25 @@ async fn ping_loop<T: Io>(
         match mode {
             ScanningMode::Paused {} => {}
             ScanningMode::Discovery {} => {
-                modes::discovery(&pinger, &mut cursors.discovery).await?;
+                modes::discovery(&mut pinger, &mut cursors.discovery).await?;
             }
             ScanningMode::DiscoveryTopPorts {} => {
-                modes::discovery_top(&pinger, &mut cursors.discovery_top_ports).await?;
+                modes::discovery_top(&mut pinger, &mut cursors.discovery_top_ports).await?;
             }
             ScanningMode::Range { ref range } => {
-                modes::range(&pinger, &mut cursors.range, range).await?;
+                modes::range(&mut pinger, &mut cursors.range, range).await?;
             }
             ScanningMode::RangeTopPorts { ref range } => {
-                modes::range_top(&pinger, &mut cursors.range_top_ports, range).await?;
+                modes::range_top(&mut pinger, &mut cursors.range_top_ports, range).await?;
             }
             ScanningMode::AllPorts { ip } => {
-                modes::all_ports(&pinger, &mut cursors.all_ports, ip).await?;
+                modes::all_ports(&mut pinger, &mut cursors.all_ports, ip).await?;
             }
             ScanningMode::Rescan { ref ips } => {
-                modes::rescan(&pinger, &mut cursors.rescan, ips).await?;
+                modes::rescan(&mut pinger, &mut cursors.rescan, ips).await?;
             }
             ScanningMode::Auto {} => {
-                modes::auto(&pinger, &mut cursors).await?;
+                modes::auto(&mut pinger, &mut cursors).await?;
             }
         }
 
