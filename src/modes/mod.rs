@@ -28,6 +28,7 @@ lazy_static! {
 }
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+#[serde(tag = "type", content = "data")]
 pub enum ScanningMode {
     /// Don't ping any servers - This can be enabled from the web ui
     Paused {},

@@ -5,9 +5,11 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "type", content = "data")]
 pub enum WebActions {
     QueueAction { action: Action },
     GetModesQueue {},
+    GetCurrentMode {},
 }
 
 pub async fn web_actions_handler(
@@ -45,7 +47,10 @@ pub async fn actions_handler(action: WebActions, server_state: &State<ServerStat
         WebActions::GetModesQueue {} => {
             let queue = server_state.mode_queue.lock().await;
             let queue: Vec<_> = queue.iter().collect();
-            json!({"success": true, "msg": "", "queue": queue})
+            json!({"success": true, "msg": "", "data": {"type": "queue", "data": queue}})
+        }
+        WebActions::GetCurrentMode {} => {
+            json!({})
         }
         #[allow(unreachable_patterns)]
         _ => json!({"success": false, "msg": "unhandled action type"}),

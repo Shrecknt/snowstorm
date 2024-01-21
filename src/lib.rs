@@ -25,6 +25,7 @@ impl Default for ScannerState {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "type", content = "data")]
 pub enum Action {
     SetMode {
         mode: ScanningMode,
