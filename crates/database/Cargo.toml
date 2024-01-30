@@ -1,0 +1,14 @@
+[package]
+name = "database"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+dotenvy = { workspace = true }
+dotenvy_macro = { workspace = true }
+sqlx = { workspace = true }
+eyre = { workspace = true }
+uuid = { workspace = true }
+serde = { workspace = true }
+azalea-protocol = { workspace = true }
+serde_json = { workspace = true }

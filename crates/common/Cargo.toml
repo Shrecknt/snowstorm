@@ -1,0 +1,15 @@
+[package]
+name = "common"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+default-net = { workspace = true }
+pnet = { workspace = true }
+pnet_macros_support = { workspace = true }
+eyre = { workspace = true }
+tracing-subscriber = { workspace = true }
+libc = { workspace = true }
+lazy_static = { workspace = true }
+tracing = { workspace = true }
+serde = { workspace = true }

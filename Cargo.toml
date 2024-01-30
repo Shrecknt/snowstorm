@@ -1,9 +1,13 @@
-[package]
-name = "snowstorm"
-version = "0.1.0"
-edition = "2021"
+[workspace]
+resolver = "2"
+members = ["crates/*"]
 
-[dependencies]
+[workspace.dependencies]
+snowstorm = { version = "0.1.0", path = "crates/snowstorm" }
+database = { version = "0.1.0", path = "crates/database" }
+common = { version = "0.1.0", path = "crates/common" }
+io = { version = "0.1.0", path = "crates/io" }
+web = { version = "0.1.0", path = "crates/web" }
 axum = { version = "0.6.20", features = ["macros", "ws", "headers"] }
 bcrypt = "0.15.0"
 boringtun = "0.6.0"

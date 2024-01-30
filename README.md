@@ -36,5 +36,5 @@ nano .env # modify .env to your liking
 cd web
 npm run build
 cd ..
-cargo r -r
+cargo r -r --bin snowstorm
 ```
