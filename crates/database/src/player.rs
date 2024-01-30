@@ -1,11 +1,11 @@
 use super::{autocomplete::AutocompleteResults, DbPush};
 use azalea_protocol::packets::status::clientbound_status_response_packet::ClientboundStatusResponsePacket;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use sqlx::{prelude::FromRow, PgPool, Row};
 use std::time::{SystemTime, UNIX_EPOCH};
 use uuid::Uuid;
 
-#[derive(Debug, Clone, PartialEq, Serialize, FromRow)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, FromRow)]
 pub struct PlayerInfo {
     #[serde(skip)]
     pub id: Option<i64>,
