@@ -2,6 +2,7 @@ pub use database_connection::DatabaseConnection;
 
 use self::{player::PlayerInfo, server::PingResult};
 
+pub mod autocomplete;
 pub mod database_connection;
 pub mod discord_user;
 pub mod forgejo_user;

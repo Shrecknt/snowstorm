@@ -1,5 +1,5 @@
 use super::{jwt::UserSession, ServerState};
-use crate::Action;
+use crate::{database::autocomplete::Autocomplete, Action};
 use axum::{extract::State, headers, response::IntoResponse, Json, TypedHeader};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
@@ -10,6 +10,7 @@ pub enum WebActions {
     QueueAction { action: Action },
     GetModesQueue {},
     GetCurrentMode {},
+    Autocomplete { autocomplete_data: Autocomplete },
 }
 
 pub async fn web_actions_handler(
@@ -51,6 +52,9 @@ pub async fn actions_handler(action: WebActions, server_state: &State<ServerStat
         }
         WebActions::GetCurrentMode {} => {
             json!({})
+        }
+        WebActions::Autocomplete { autocomplete_data } => {
+            autocomplete_data.autocomplete(&server_state.db.pool).await
         }
         #[allow(unreachable_patterns)]
         _ => json!({"success": false, "msg": "unhandled action type"}),

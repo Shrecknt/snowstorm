@@ -20,6 +20,7 @@ pub mod actions;
 pub mod authentication;
 pub mod jwt;
 
+mod api;
 mod oauth;
 mod ws;
 

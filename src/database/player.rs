@@ -1,4 +1,4 @@
-use super::DbPush;
+use super::{autocomplete::AutocompleteResults, DbPush};
 use azalea_protocol::packets::status::clientbound_status_response_packet::ClientboundStatusResponsePacket;
 use serde::Serialize;
 use sqlx::{prelude::FromRow, PgPool, Row};
@@ -23,6 +23,17 @@ impl PlayerInfo {
             username,
             server: None,
         }
+    }
+
+    pub async fn autocomplete_username(username: &str, pool: &PgPool) -> AutocompleteResults {
+        let players = sqlx::query_as(
+            "SELECT username, uuid FROM players WHERE username ILIKE '%' || $1::TEXT || '%' LIMIT 16",
+        )
+        .bind(username)
+        .fetch_all(pool)
+        .await
+        .unwrap();
+        AutocompleteResults::Username { players }
     }
 
     pub async fn from_username(username: &str, pool: &PgPool) -> Option<Self> {

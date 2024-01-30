@@ -11,7 +11,7 @@ impl DatabaseConnection {
     pub async fn new() -> Result<Self, sqlx::Error> {
         let pool = PgPoolOptions::new()
             .max_connections(8)
-            .connect(var!("POSTGRES_URL"))
+            .connect(var!("DATABASE_URL"))
             .await?;
         Ok(Self { pool })
     }

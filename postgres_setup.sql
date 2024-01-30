@@ -57,6 +57,8 @@ CREATE TABLE servers (
     description TEXT,
     enforces_secure_chat BOOLEAN,
     previews_chat BOOLEAN,
+	discovered BIGINT NOT NULL DEFAULT EXTRACT(epoch from now()),
+	last_seen BIGINT NOT NULL DEFAULT EXTRACT(epoch from now()),
 	UNIQUE (ip, port),
 	UNIQUE (id)
 );

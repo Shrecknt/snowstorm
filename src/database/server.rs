@@ -18,6 +18,9 @@ pub struct PingResult {
     pub description: Option<String>,
     pub enforces_secure_chat: Option<bool>,
     pub previews_chat: Option<bool>,
+    // timestamps
+    pub discovered: i64,
+    pub last_seen: i64,
 }
 
 impl PingResult {
@@ -41,6 +44,8 @@ impl PingResult {
             description: None,
             enforces_secure_chat: None,
             previews_chat: None,
+            discovered: 0,
+            last_seen: 0,
         }
     }
 
@@ -56,6 +61,8 @@ impl PingResult {
             description: Some(value.description.to_string()),
             enforces_secure_chat: value.enforces_secure_chat,
             previews_chat: None,
+            discovered: 0,
+            last_seen: 0,
         }
     }
 }
@@ -89,7 +96,8 @@ impl DbPush for PingResult {
                     online_players = excluded.max_players,
                     description = excluded.description,
                     enforces_secure_chat = excluded.enforces_secure_chat,
-                    previews_chat = excluded.previews_chat
+                    previews_chat = excluded.previews_chat,
+                    last_seen = excluded.last_seen
                 RETURNING id";
         let new_id: i64 = sqlx::query(query)
             .bind(self.id)

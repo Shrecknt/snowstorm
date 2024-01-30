@@ -19,3 +19,6 @@ package
 .output
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# Other
+/scripts
