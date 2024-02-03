@@ -33,12 +33,7 @@ pub fn cookie(address: &SocketAddrV4, seed: u64) -> u32 {
     hasher.finish() as u32
 }
 
+#[derive(Default)]
 pub struct ScannerState {
     pub discovered: u32,
-}
-
-impl Default for ScannerState {
-    fn default() -> Self {
-        Self { discovered: 0 }
-    }
 }

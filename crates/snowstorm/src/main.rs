@@ -16,7 +16,7 @@ use std::{
     time::{Duration, Instant},
 };
 use tokio::{runtime::Runtime, sync::Mutex};
-use web::actions::actions::Action;
+use web::actions::action::Action;
 
 #[tokio::main]
 async fn main() -> eyre::Result<()> {

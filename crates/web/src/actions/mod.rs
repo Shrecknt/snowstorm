@@ -1,2 +1,2 @@
-pub mod actions;
+pub mod action;
 pub mod web_actions;

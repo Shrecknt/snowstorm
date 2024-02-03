@@ -1,4 +1,4 @@
-use crate::actions::actions::Action;
+use crate::actions::action::Action;
 use actions::web_actions::web_actions_handler;
 use axum::{
     body::{boxed, Body, BoxBody},
