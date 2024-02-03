@@ -4,7 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-database = { workspace = true }
 reqwest = { workspace = true }
 uuid = { workspace = true }
 urlencoding = { workspace = true }
+tokio = { workspace = true }
+serde = { workspace = true }
