@@ -17,6 +17,7 @@ async fn main() -> eyre::Result<()> {
 
     let run_time = end_time - start_time;
 
+    // println!("ranges = {ranges:?}");
     println!("ranges len = {:?}", ranges.len());
     println!("time to run {run_time:?}");
 

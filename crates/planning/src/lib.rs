@@ -7,7 +7,8 @@ use rand::{
 };
 use sqlx::PgPool;
 use std::{
-    collections::HashMap,
+    collections::{BTreeMap, HashMap},
+    hash::Hash,
     net::{Ipv4Addr, SocketAddrV4},
 };
 
@@ -81,6 +82,7 @@ impl ScanningMode {
             ScanningMode::OnePortAllAddress => {
                 let mut rng = rand::thread_rng();
                 let ports = db::get_ports(pool).await?;
+                let ports = top(ports, 20);
                 let weighted = WeightedIndex::new(ports.values()).unwrap();
                 let port = *ports.keys().nth(weighted.sample(&mut rng)).unwrap();
                 let ips = db::get_ips(pool).await?;
@@ -108,4 +110,18 @@ impl ScanningMode {
             ScanningMode::AllPortSingleAddress => todo!(),
         }
     }
+}
+
+pub fn top<T: Hash + Ord + Copy>(map: HashMap<T, usize>, num: usize) -> HashMap<T, usize> {
+    let btree_map = map
+        .iter()
+        .map(|(k, v)| (*v, *k))
+        .collect::<BTreeMap<usize, T>>();
+    let mut res = HashMap::new();
+    let mut map_iter = btree_map.iter().rev();
+    for _ in 0..btree_map.len().min(num) {
+        let (v, k) = map_iter.next().unwrap();
+        res.insert(*k, *v);
+    }
+    res
 }
