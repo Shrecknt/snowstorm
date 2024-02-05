@@ -9,7 +9,14 @@ pub struct SocketAddrV4Range {
 }
 
 impl SocketAddrV4Range {
-    pub fn new(start: SocketAddrV4, end: SocketAddrV4, count: u64) -> Self {
+    pub fn new(start: SocketAddrV4, end: SocketAddrV4) -> Self {
+        Self {
+            start,
+            end,
+            count: 0,
+        }
+    }
+    pub fn new_with_count(start: SocketAddrV4, end: SocketAddrV4, count: u64) -> Self {
         Self { start, end, count }
     }
 
