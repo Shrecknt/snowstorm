@@ -1,19 +1,24 @@
 #![feature(map_many_mut)]
 
+use asn::{get_slash24, get_slash24s_map_key};
 use common::network_range::SocketAddrV4Range;
+use prelude::*;
 use rand::{
     distributions::{Distribution, WeightedIndex},
     Rng,
 };
 use sqlx::PgPool;
 use std::{
-    collections::{BTreeMap, HashMap},
+    collections::HashMap,
     hash::Hash,
     net::{Ipv4Addr, SocketAddrV4},
 };
 
-mod asn;
 mod db;
+
+pub mod asn;
+pub mod constants;
+pub mod prelude;
 
 pub struct ModePicker {
     pub modes: HashMap<ScanningMode, usize>,
@@ -47,10 +52,17 @@ impl ModePicker {
     }
 }
 
+impl Default for ModePicker {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, enum_utils::IterVariants)]
 pub enum ScanningMode {
     OnePortAllAddress,
     AllPortSingleAddress,
+    AllPortSingleRange,
 }
 
 #[derive(PartialEq, Eq, Hash, sqlx::FromRow)]
@@ -80,48 +92,34 @@ impl ScanningMode {
     ) -> Result<Vec<SocketAddrV4Range>, sqlx::Error> {
         match self {
             ScanningMode::OnePortAllAddress => {
-                let mut rng = rand::thread_rng();
-                let ports = db::get_ports(pool).await?;
-                let ports = top(ports, 20);
-                let weighted = WeightedIndex::new(ports.values()).unwrap();
-                let port = *ports.keys().nth(weighted.sample(&mut rng)).unwrap();
+                let port = db::get_ports(pool)
+                    .await?
+                    .top(20)
+                    .select_one_random_weighted();
                 let ips = db::get_ips(pool).await?;
-                println!("count = {}", ips.keys().len());
-                let weighted = WeightedIndex::new(ips.values()).unwrap();
-                let mut keys = weighted.sample_iter(&mut rng);
-                let ips = {
-                    let mut res = Vec::new();
-                    let ips = ips.keys().collect::<Vec<_>>();
-                    for _ in 0..u16::MAX {
-                        let ip = **ips.get(keys.next().unwrap()).unwrap();
-                        res.push(ip);
-                    }
-                    res
-                };
-                let slash24s = asn::get_slash24s(&ips);
-                let socket_addr_ranges = slash24s.iter().map(|slash24| {
-                    SocketAddrV4Range::new(
-                        SocketAddrV4::new(slash24.first, port),
-                        SocketAddrV4::new(slash24.last, port),
-                    )
-                });
-                Ok(socket_addr_ranges.collect())
+                let ip_ranges =
+                    get_slash24s_map_key(&ips).select_many_random_weighted(u16::MAX as usize);
+                let socket_addr_ranges = ip_ranges
+                    .iter()
+                    .map(|slash24| (*slash24, port).into())
+                    .collect();
+                Ok(socket_addr_ranges)
             }
-            ScanningMode::AllPortSingleAddress => todo!(),
+            ScanningMode::AllPortSingleAddress => {
+                let ips = db::get_ips(pool).await?;
+                let ip = ips.select_one_random_weighted();
+                Ok(vec![SocketAddrV4Range::new(
+                    SocketAddrV4::new(ip, constants::MIN_PORT),
+                    SocketAddrV4::new(ip, constants::MAX_PORT),
+                )])
+            }
+            ScanningMode::AllPortSingleRange => {
+                let ips = db::get_ips(pool).await?;
+                let range = get_slash24(ips.select_one_random_weighted());
+                Ok(vec![
+                    (range, constants::MIN_PORT, constants::MAX_PORT).into()
+                ])
+            }
         }
     }
-}
-
-pub fn top<T: Hash + Ord + Copy>(map: HashMap<T, usize>, num: usize) -> HashMap<T, usize> {
-    let btree_map = map
-        .iter()
-        .map(|(k, v)| (*v, *k))
-        .collect::<BTreeMap<usize, T>>();
-    let mut res = HashMap::new();
-    let mut map_iter = btree_map.iter().rev();
-    for _ in 0..btree_map.len().min(num) {
-        let (v, k) = map_iter.next().unwrap();
-        res.insert(*k, *v);
-    }
-    res
 }

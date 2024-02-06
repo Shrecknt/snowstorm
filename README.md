@@ -10,11 +10,11 @@ Scan the entire ipv4 address space for Minecraft servers, with dynamic scanning 
 
 > **Important**
 > - The scanner is currently very early in development and is missing many features
-> - The current version of the scanner is synchronous and single threaded, making it extremely slows
+> - The scanner's adaptive scanning capabilities rely on already having some data to expand upon. If you do not already have a small number of servers in your database, the scanner will likely crash.
 
 ## Prerequisites
 
-- Rust 1.77.0-nightly
+- Rust 1.78.0-nightly
 - Node.js 21.1.0 - for webui
 - npm 10.2.4 - for webui
 - A postgres database

@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddrV4;
 
+use crate::addr_range::Ipv4AddrRange;
+
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct SocketAddrV4Range {
     pub start: SocketAddrV4,
@@ -91,5 +93,24 @@ impl PartialOrd for SocketAddrV4Range {
             ord => return ord,
         }
         self.end.partial_cmp(&other.end)
+    }
+}
+
+impl From<(Ipv4AddrRange, u16, u16)> for SocketAddrV4Range {
+    fn from(value: (Ipv4AddrRange, u16, u16)) -> Self {
+        let (ip, port0, port1) = value;
+
+        SocketAddrV4Range::new(
+            SocketAddrV4::new(ip.first, port0),
+            SocketAddrV4::new(ip.last, port1),
+        )
+    }
+}
+
+impl From<(Ipv4AddrRange, u16)> for SocketAddrV4Range {
+    fn from(value: (Ipv4AddrRange, u16)) -> Self {
+        let (ip, port) = value;
+
+        (ip, port, port).into()
     }
 }
