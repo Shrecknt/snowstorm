@@ -8,6 +8,7 @@ database = { version = "0.1.0", path = "crates/database" }
 common = { version = "0.1.0", path = "crates/common" }
 io = { version = "0.1.0", path = "crates/io" }
 web = { version = "0.1.0", path = "crates/web" }
+scheduling = { version = "0.1.0", path = "crates/scheduling" }
 axum = { version = "0.6.20", features = ["macros", "ws", "headers"] }
 bcrypt = "0.15.0"
 boringtun = "0.6.0"

@@ -2669,23 +2669,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2900ede94e305130c13ddd391e0ab7cbaeb783945ae07a279c268cb05109c6cb"
 
 [[package]]
-name = "planning"
-version = "0.1.0"
-dependencies = [
- "common",
- "database",
- "dotenvy",
- "dotenvy_macro",
- "enum-utils",
- "eyre",
- "io",
- "rand",
- "sqlx",
- "tokio",
- "web",
-]
-
-[[package]]
 name = "platforms"
 version = "3.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3109,6 +3092,23 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fbc91545643bcf3a0bbb6569265615222618bdf33ce4ffbbd13c4bbd4c093534"
 dependencies = [
  "windows-sys 0.52.0",
+]
+
+[[package]]
+name = "scheduling"
+version = "0.1.0"
+dependencies = [
+ "common",
+ "database",
+ "dotenvy",
+ "dotenvy_macro",
+ "enum-utils",
+ "eyre",
+ "io",
+ "rand",
+ "sqlx",
+ "tokio",
+ "web",
 ]
 
 [[package]]

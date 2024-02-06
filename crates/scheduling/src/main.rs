@@ -1,5 +1,5 @@
 use database::DatabaseConnection;
-use planning::ScanningMode;
+use scheduling::ScanningMode;
 
 macro_rules! test_modes {
     ($($mode:expr),*) => {
