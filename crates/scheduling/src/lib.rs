@@ -60,9 +60,25 @@ impl Default for ModePicker {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, enum_utils::IterVariants)]
 pub enum ScanningMode {
+    /// /0 on 25565
     OnePortAllAddress,
+    /// /0 on random top 20 port
+    OneRandomPortAllAddress,
+    /// /32 on 1024-65535
     AllPortSingleAddress,
+    /// /24 on 1024-65535
     AllPortSingleRange,
+}
+
+impl ScanningMode {
+    pub fn variants() -> Vec<Self> {
+        Self::iter().collect()
+    }
+    pub fn is_enabled(&self) -> bool {
+        match self {
+            _ => true,
+        }
+    }
 }
 
 #[derive(PartialEq, Eq, Hash, sqlx::FromRow)]
@@ -92,6 +108,16 @@ impl ScanningMode {
     ) -> Result<Vec<SocketAddrV4Range>, sqlx::Error> {
         match self {
             ScanningMode::OnePortAllAddress => {
+                let ips = db::get_ips(pool).await?;
+                let ip_ranges =
+                    get_slash24s_map_key(&ips).select_many_random_weighted(u16::MAX as usize);
+                let socket_addr_ranges = ip_ranges
+                    .iter()
+                    .map(|slash24| (*slash24, 25565).into())
+                    .collect();
+                Ok(socket_addr_ranges)
+            }
+            ScanningMode::OneRandomPortAllAddress => {
                 let port = db::get_ports(pool)
                     .await?
                     .top(20)
