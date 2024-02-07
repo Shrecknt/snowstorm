@@ -2,14 +2,15 @@
 
 use asn::{get_slash24, get_slash24s_map_key};
 use common::network_range::SocketAddrV4Range;
+use dashmap::DashMap;
 use prelude::*;
 use rand::{
     distributions::{Distribution, WeightedIndex},
     Rng,
 };
+use rayon::prelude::*;
 use sqlx::PgPool;
 use std::{
-    collections::HashMap,
     hash::Hash,
     net::{Ipv4Addr, SocketAddrV4},
 };
@@ -20,35 +21,79 @@ pub mod asn;
 pub mod constants;
 pub mod prelude;
 
+/// (usize::MAX as f64).powf(0.5) as usize
+const DEFAULT_WEIGHT: usize = 0x100000000;
+
+#[derive(Debug)]
 pub struct ModePicker {
-    pub modes: HashMap<ScanningMode, usize>,
+    pub modes: DashMap<ScanningMode, usize>,
 }
 
 impl ModePicker {
     pub fn new() -> Self {
-        let mut modes = HashMap::new();
+        let modes = DashMap::new();
         for variant in ScanningMode::iter() {
-            modes.insert(variant, (usize::MAX as f64).powf(0.5) as usize);
+            if variant.is_enabled() {
+                modes.insert(variant, 0);
+            }
         }
         Self { modes }
     }
-    pub fn pick_random(&mut self) -> ScanningMode {
-        if self.modes.values().sum::<usize>() == 0 {
-            for count in self.modes.values_mut() {
-                *count = (usize::MAX as f64).powf(0.5) as usize;
+    pub fn new_all() -> Self {
+        let modes = DashMap::new();
+        for variant in ScanningMode::iter() {
+            modes.insert(variant, 0);
+        }
+        Self { modes }
+    }
+
+    pub fn set(&mut self, variant: ScanningMode, count: usize) {
+        if let Some(mut value) = self.modes.get_mut(&variant) {
+            *value = count;
+        } else {
+            self.modes.insert(variant, count);
+        }
+    }
+
+    pub fn update(&mut self, variant: ScanningMode, count: usize) {
+        if let Some(mut value) = self.modes.get_mut(&variant) {
+            if *value == 0 || *value == DEFAULT_WEIGHT {
+                *value = count;
+            } else {
+                *value /= 4;
+                *value += count * 3 / 4;
             }
+        } else {
+            self.modes.insert(variant, count);
+        }
+    }
+
+    pub fn pick_random(&mut self) -> ScanningMode {
+        if self.modes.is_empty() {
+            panic!("ModePicker was incorrectly initialized, no values in self.modes\nTry calling ModePicker::new() or enabling some modes");
+        }
+        if self.modes.iter().all(|v| *v.value() == 0) {
+            for mut count in self.modes.iter_mut() {
+                *count.value_mut() = DEFAULT_WEIGHT;
+            }
+            return ScanningMode::OnePortAllAddress;
         }
         let mut rng = rand::thread_rng();
-        let random_weights = self.modes.values().map(|value| {
-            let value = *value as i64;
-            let mut new_value = value.saturating_add(rng.gen_range(-100..100));
+        let random_weights = self.modes.iter().map(|value| {
+            let value = *value.value() as i64;
+            let mut new_value = value.saturating_add(rng.gen_range(-100..=100));
             if new_value < 1 {
                 new_value = 1;
             }
             new_value as usize
         });
         let weighted = WeightedIndex::new(random_weights).unwrap();
-        *self.modes.keys().nth(weighted.sample(&mut rng)).unwrap()
+        *self
+            .modes
+            .iter()
+            .nth(weighted.sample(&mut rng))
+            .unwrap()
+            .key()
     }
 }
 
@@ -124,20 +169,24 @@ impl ScanningMode {
         match self {
             ScanningMode::OnePortAllAddress => {
                 let ips = db::get_ips(pool).await?;
-                let ip_ranges =
-                    get_slash24s_map_key(&ips).select_many_random_weighted(u16::MAX as usize);
+                let ip_ranges = get_slash24s_map_key(&ips)
+                    .await
+                    .select_many_random_weighted(u16::MAX as usize)
+                    .await;
                 let socket_addr_ranges = ip_ranges
-                    .iter()
+                    .par_iter()
                     .map(|slash24| (*slash24, 25565).into())
                     .collect();
                 Ok(socket_addr_ranges)
             }
             ScanningMode::TopPortAllAddress => {
                 let ports = db::get_ports(pool).await?.top(10);
-                let ports = ports.keys().copied().collect::<Vec<_>>();
+                let ports = ports.par_iter().map(|v| *v.key()).collect::<Vec<_>>();
                 let ips = db::get_ips(pool).await?;
-                let ip_ranges =
-                    get_slash24s_map_key(&ips).select_many_random_weighted(u16::MAX as usize);
+                let ip_ranges = get_slash24s_map_key(&ips)
+                    .await
+                    .select_many_random_weighted(u16::MAX as usize)
+                    .await;
                 let mut socket_addr_ranges = Vec::new();
                 for slash24 in ip_ranges {
                     for port in &ports {
@@ -148,20 +197,24 @@ impl ScanningMode {
             }
             ScanningMode::OnePortMinecraftRange => {
                 let ips = db::get_ips(pool).await?;
-                let ip_ranges =
-                    get_slash24s_map_key(&ips).select_many_random_weighted(u16::MAX as usize);
+                let ip_ranges = get_slash24s_map_key(&ips)
+                    .await
+                    .select_many_random_weighted(u16::MAX as usize)
+                    .await;
                 let socket_addr_ranges = ip_ranges
-                    .iter()
+                    .par_iter()
                     .map(|slash24| (*slash24, 25565).into())
                     .collect();
                 Ok(socket_addr_ranges)
             }
             ScanningMode::TopPortMinecraftRange => {
                 let ports = db::get_ports(pool).await?.top(100);
-                let ports = ports.keys().copied().collect::<Vec<_>>();
+                let ports = ports.par_iter().map(|v| *v.key()).collect::<Vec<_>>();
                 let ips = db::get_ips(pool).await?;
-                let ip_ranges =
-                    get_slash24s_map_key(&ips).select_many_random_weighted(u16::MAX as usize);
+                let ip_ranges = get_slash24s_map_key(&ips)
+                    .await
+                    .select_many_random_weighted(u16::MAX as usize)
+                    .await;
                 let mut socket_addr_ranges = Vec::new();
                 for slash24 in ip_ranges {
                     for port in &ports {
@@ -172,8 +225,10 @@ impl ScanningMode {
             }
             ScanningMode::AllPortMinecraftRange => {
                 let ips = db::get_ips(pool).await?;
-                let ip_ranges =
-                    get_slash24s_map_key(&ips).select_many_random_weighted(u16::MAX as usize);
+                let ip_ranges = get_slash24s_map_key(&ips)
+                    .await
+                    .select_many_random_weighted(u16::MAX as usize)
+                    .await;
                 let mut socket_addr_ranges = Vec::new();
                 for slash24 in ip_ranges {
                     socket_addr_ranges
@@ -185,19 +240,25 @@ impl ScanningMode {
                 let port = db::get_ports(pool)
                     .await?
                     .top(20)
-                    .select_one_random_weighted();
+                    .select_one_random_weighted()
+                    .await;
                 let ips = db::get_ips(pool).await?;
-                let ip_ranges =
-                    get_slash24s_map_key(&ips).select_many_random_weighted(u16::MAX as usize);
+                let ip_ranges = get_slash24s_map_key(&ips)
+                    .await
+                    .select_many_random_weighted(u16::MAX as usize)
+                    .await;
                 let socket_addr_ranges = ip_ranges
-                    .iter()
+                    .par_iter()
                     .map(|slash24| (*slash24, port).into())
                     .collect();
                 Ok(socket_addr_ranges)
             }
             ScanningMode::AllPortSingleMinecraftRange => {
                 let ips = db::get_ips(pool).await?;
-                let ip_range = get_slash24s_map_key(&ips).select_one_random_weighted();
+                let ip_range = get_slash24s_map_key(&ips)
+                    .await
+                    .select_one_random_weighted()
+                    .await;
 
                 Ok(vec![
                     (ip_range, constants::MIN_PORT, constants::MAX_PORT).into()
@@ -205,7 +266,7 @@ impl ScanningMode {
             }
             ScanningMode::AllPortSingleMinecraftAddress => {
                 let ips = db::get_ips(pool).await?;
-                let ip = ips.select_one_random_weighted();
+                let ip = ips.select_one_random_weighted().await;
                 Ok(vec![SocketAddrV4Range::new(
                     SocketAddrV4::new(ip, constants::MIN_PORT),
                     SocketAddrV4::new(ip, constants::MAX_PORT),
@@ -213,7 +274,7 @@ impl ScanningMode {
             }
             ScanningMode::AllPortSingleRange => {
                 let ips = db::get_ips(pool).await?;
-                let range = get_slash24(ips.select_one_random_weighted());
+                let range = get_slash24(ips.select_one_random_weighted().await);
                 Ok(vec![
                     (range, constants::MIN_PORT, constants::MAX_PORT).into()
                 ])

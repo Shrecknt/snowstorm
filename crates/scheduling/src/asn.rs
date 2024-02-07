@@ -1,8 +1,7 @@
 use common::addr_range::Ipv4AddrRange;
-use std::{
-    collections::{HashMap, HashSet},
-    net::Ipv4Addr,
-};
+use dashmap::{DashMap, DashSet};
+use rayon::prelude::*;
+use std::net::Ipv4Addr;
 
 pub fn get_slash24(ip: Ipv4Addr) -> Ipv4AddrRange {
     let bits = u32::from(ip);
@@ -12,22 +11,24 @@ pub fn get_slash24(ip: Ipv4Addr) -> Ipv4AddrRange {
     )
 }
 
-pub fn get_slash24s(ips: &Vec<Ipv4Addr>) -> Vec<Ipv4AddrRange> {
-    let mut ranges = HashSet::new();
+pub async fn get_slash24s(ips: &Vec<Ipv4Addr>) -> Vec<Ipv4AddrRange> {
+    tokio::task::yield_now().await;
+    let ranges = DashSet::new();
     for ip in ips {
         let range = get_slash24(*ip);
         if !ranges.contains(&range) {
             ranges.insert(range);
         }
     }
-    ranges.iter().copied().collect()
+    ranges.par_iter().map(|v| *v).collect()
 }
 
-pub fn get_slash24s_map_key(ips: &HashMap<Ipv4Addr, usize>) -> HashMap<Ipv4AddrRange, usize> {
-    let keys = ips.keys().map(|ip| get_slash24(*ip));
-    let mut res = HashMap::new();
-    for (k, v) in keys.zip(ips.values().copied()) {
-        if let Some(value) = res.get_mut(&k) {
+pub async fn get_slash24s_map_key(ips: &DashMap<Ipv4Addr, usize>) -> DashMap<Ipv4AddrRange, usize> {
+    tokio::task::yield_now().await;
+    let keys = ips.iter().map(|ip| get_slash24(*ip.key()));
+    let res = DashMap::new();
+    for (k, v) in keys.zip(ips.iter().map(|v| *v.value())) {
+        if let Some(mut value) = res.get_mut(&k) {
             *value += v;
         } else {
             res.insert(k, v);

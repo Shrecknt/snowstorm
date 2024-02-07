@@ -1,5 +1,5 @@
 use database::DatabaseConnection;
-use scheduling::ScanningMode;
+use scheduling::{ModePicker, ScanningMode};
 use std::io::Write;
 
 #[tokio::main]
@@ -7,6 +7,20 @@ async fn main() -> eyre::Result<()> {
     dotenvy::dotenv().expect(".env file not found");
 
     let db = DatabaseConnection::new().await?;
+
+    let mut modes = ModePicker::new_all();
+    for _ in 0..ScanningMode::variants().len() * 2 {
+        let mode = modes.pick_random();
+        print!("Running {:?}...", mode);
+        std::io::stdout().flush().unwrap();
+        let ranges = mode.get_addresses(&db.pool).await?;
+        modes.update(mode, ranges.len());
+        println!(
+            " found {} ranges, new state: {:?}",
+            ranges.len(),
+            modes.modes.iter().map(|v| *v.value()).collect::<Vec<_>>()
+        );
+    }
 
     for mode in ScanningMode::variants() {
         print!("Testing {:?}...", mode);

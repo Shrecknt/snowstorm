@@ -45,3 +45,5 @@ default-net = "0.21.0"
 pnet_macros_support = "0.34.0"
 uuid = "1.7.0"
 enum-utils = "0.1.2"
+dashmap = { version = "5.5.3", features = ["rayon"] }
+rayon = "1.8.1"
