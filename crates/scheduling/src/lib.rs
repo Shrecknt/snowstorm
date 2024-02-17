@@ -13,7 +13,10 @@ use sqlx::PgPool;
 use std::{
     hash::Hash,
     net::{Ipv4Addr, SocketAddrV4},
+    sync::{mpsc::Sender, Arc},
+    time::Duration,
 };
+use tokio::runtime::Runtime;
 
 mod db;
 
@@ -281,4 +284,19 @@ impl ScanningMode {
             }
         }
     }
+}
+
+pub fn start_scheduler_queue(
+    sender: Sender<Vec<SocketAddrV4Range>>,
+    interval: Duration,
+    modes: Arc<ModePicker>,
+) {
+    std::thread::spawn(move || {
+        Runtime::new().unwrap().block_on(async move {
+            loop {
+                let _ = sender.send(Vec::new());
+                tokio::time::sleep(interval).await;
+            }
+        });
+    });
 }

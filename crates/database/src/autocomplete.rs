@@ -14,8 +14,8 @@ pub enum Autocomplete {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", content = "data")]
 pub enum AutocompleteResults {
-    Username { players: Vec<(String, Uuid)> },
-    Uuid { players: Vec<(String, Uuid)> },
+    Username { players: Vec<(i64, Uuid, String)> },
+    Uuid { players: Vec<(i64, Uuid, String)> },
 }
 
 impl Autocomplete {

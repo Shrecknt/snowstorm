@@ -1,0 +1,14 @@
+[package]
+name = "discord"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+database = { workspace = true }
+dotenvy = { workspace = true }
+dotenvy_macro = { workspace = true }
+sqlx = { workspace = true }
+eyre = { workspace = true }
+uuid = { workspace = true }
+serenity = { workspace = true }
+tokio = { workspace = true }

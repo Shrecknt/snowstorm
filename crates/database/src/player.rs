@@ -11,6 +11,7 @@ pub struct PlayerInfo {
     pub id: Option<i64>,
     pub uuid: Uuid,
     pub username: String,
+    #[sqlx(default)]
     #[serde(skip)]
     pub server: Option<i64>,
 }
@@ -26,13 +27,15 @@ impl PlayerInfo {
     }
 
     pub async fn autocomplete_username(username: &str, pool: &PgPool) -> AutocompleteResults {
+        println!("username = {username}");
         let players = sqlx::query_as(
-            "SELECT username, uuid FROM players WHERE username ILIKE '%' || $1::TEXT || '%' LIMIT 16",
+            "SELECT id, uuid, username FROM players WHERE username ILIKE '%' || $1::TEXT || '%' LIMIT 16",
         )
         .bind(username)
         .fetch_all(pool)
         .await
         .unwrap();
+        println!("players = {players:?}");
         AutocompleteResults::Username { players }
     }
 
@@ -47,6 +50,14 @@ impl PlayerInfo {
     pub async fn from_uuid(uuid: Uuid, pool: &PgPool) -> Option<Self> {
         sqlx::query_as("SELECT * FROM players WHERE uuid = $1::UUID")
             .bind(uuid)
+            .fetch_optional(pool)
+            .await
+            .unwrap()
+    }
+
+    pub async fn from_id(id: i64, pool: &PgPool) -> Option<Self> {
+        sqlx::query_as("SELECT * FROM players WHERE id = $1::BIGINT")
+            .bind(id)
             .fetch_optional(pool)
             .await
             .unwrap()
