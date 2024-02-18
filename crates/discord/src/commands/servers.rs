@@ -32,6 +32,7 @@ pub async fn run(pool: &PgPool, options: &[ResolvedOption<'_>]) -> CreateInterac
         if let Some(server) = server {
             let id = server.id.unwrap();
             let embed = CreateEmbed::new()
+                .color(EMBED_COLOR)
                 .title(format!("{}:{}", server.ip(), server.port()))
                 .url(format!("https://snowstorm.shrecked.dev/server/{id}"))
                 .description(format!(
@@ -63,8 +64,8 @@ pub async fn run(pool: &PgPool, options: &[ResolvedOption<'_>]) -> CreateInterac
 }
 
 pub fn register() -> CreateCommand {
-    CreateCommand::new("server_info")
-        .description("Find a server by IP")
+    CreateCommand::new("servers")
+        .description("Find servers with various filters")
         .add_option(
             CreateCommandOption::new(
                 CommandOptionType::String,

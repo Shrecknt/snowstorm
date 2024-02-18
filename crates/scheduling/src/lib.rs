@@ -135,12 +135,10 @@ impl ScanningMode {
         Self::iter().collect()
     }
     pub fn is_enabled(&self) -> bool {
-        match self {
-            Self::OneRandomPortAllAddress => false,
-            Self::AllPortMinecraftRange => false,
-            Self::AllPortSingleRange => false,
-            _ => true,
-        }
+        !matches!(
+            self,
+            Self::OneRandomPortAllAddress | Self::AllPortMinecraftRange | Self::AllPortSingleRange
+        )
     }
 }
 

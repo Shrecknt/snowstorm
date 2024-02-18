@@ -1,4 +1,4 @@
-use crate::NUM_CODES;
+use crate::{EMBED_COLOR, EMBED_COLOR_ERROR, NUM_CODES};
 use database::autocomplete::AutocompleteResults;
 use serenity::{
     all::{CommandOptionType, ResolvedOption, ResolvedValue},
@@ -16,10 +16,17 @@ pub async fn run(pool: &PgPool, options: &[ResolvedOption<'_>]) -> CreateInterac
         ..
     }) = options.first()
     {
-        let Ok(id) = username_uuid.parse() else {
+        let id = username_uuid.parse();
+        let Ok(id) = id else {
             return CreateInteractionResponse::Message(
-                CreateInteractionResponseMessage::new()
-                    .content("invalid int, use autocomplete ya goob"),
+                CreateInteractionResponseMessage::new().embed(
+                    CreateEmbed::new()
+                        .color(EMBED_COLOR_ERROR)
+                        .title("Invalid Argument")
+                        .description(
+                            format!("Invalid value for `username_uuid`\nTry using the autocomplete menu\n\n`{id:?}`"),
+                        ),
+                ),
             );
         };
         let start_time = Instant::now();
@@ -42,6 +49,7 @@ pub async fn run(pool: &PgPool, options: &[ResolvedOption<'_>]) -> CreateInterac
                 })
                 .collect::<Vec<_>>();
             let embed = CreateEmbed::new()
+                .color(EMBED_COLOR)
                 .title(player.username)
                 .url(format!("https://snowstorm.shrecked.dev/player/{id}"))
                 .description(format!("{}\n{}", player.uuid, display_servers.join("\n")))
@@ -49,13 +57,23 @@ pub async fn run(pool: &PgPool, options: &[ResolvedOption<'_>]) -> CreateInterac
             CreateInteractionResponse::Message(CreateInteractionResponseMessage::new().embed(embed))
         } else {
             CreateInteractionResponse::Message(
-                CreateInteractionResponseMessage::new().content("use autocomplete u goober"),
+                CreateInteractionResponseMessage::new().embed(
+                    CreateEmbed::new()
+                        .color(EMBED_COLOR_ERROR)
+                        .title("Invalid Argument")
+                        .description(
+                            "Invalid value for `username_uuid`\nTry using the autocomplete menu\n\n`Provided index not found in database`",
+                        ),
+                ),
             )
         }
     } else {
-        CreateInteractionResponse::Message(
-            CreateInteractionResponseMessage::new().content("something weird happen"),
-        )
+        CreateInteractionResponse::Message(CreateInteractionResponseMessage::new().embed(
+            CreateEmbed::new()
+                .color(EMBED_COLOR_ERROR)
+                .title("Missing Argument")
+                .description("`username_uuid` argument not found.\nThis shouldn't be possible :/\nthanks discor"),
+        ))
     }
 }
 
@@ -73,7 +91,7 @@ pub async fn run_autocomplete(
     }) = options.first()
     {
         let results =
-            database::player::PlayerInfo::autocomplete_username(&username_uuid, pool).await;
+            database::player::PlayerInfo::autocomplete_username(username_uuid, pool).await;
         if let AutocompleteResults::Username { players } = results {
             let mut res = Vec::with_capacity(players.len());
             for (id, uuid, username) in players {

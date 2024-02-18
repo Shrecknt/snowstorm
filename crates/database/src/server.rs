@@ -141,8 +141,8 @@ impl DbPush for PingResult {
                 RETURNING id";
         let new_id: i64 = sqlx::query(query)
             .bind(self.id)
-            .bind(self.ip as i32)
-            .bind(self.port as i16)
+            .bind(self.ip)
+            .bind(self.port)
             .bind(self.version_name.clone())
             .bind(self.version_protocol)
             .bind(self.max_players)

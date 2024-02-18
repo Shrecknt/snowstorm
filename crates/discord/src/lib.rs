@@ -4,6 +4,7 @@ use serenity::async_trait;
 use serenity::builder::{
     CreateAutocompleteResponse, CreateInteractionResponse, CreateInteractionResponseMessage,
 };
+use serenity::model::Color;
 use serenity::prelude::*;
 use sqlx::PgPool;
 
@@ -17,6 +18,9 @@ pub const NUM_CODES: [&str; 10] = [
 const DISCORD_BOT_TOKEN: &str = var!("DISCORD_BOT_TOKEN");
 pub const DISCORD_BOT_ID: &str = var!("DISCORD_BOT_ID");
 pub const DISCORD_BOT_GUILD_ID: &str = var!("DISCORD_BOT_GUILD_ID");
+
+pub const EMBED_COLOR: Color = Color::from_rgb(30, 110, 220);
+pub const EMBED_COLOR_ERROR: Color = Color::from_rgb(250, 70, 70);
 
 pub struct PoolData;
 impl TypeMapKey for PoolData {
@@ -48,11 +52,13 @@ impl EventHandler for Handler {
         } else if let Interaction::Command(command) = interaction {
             let content: Option<CreateInteractionResponse> = match command.data.name.as_str() {
                 "test" => Some(commands::test::run(&command.data.options())),
+                "api_key" => Some(commands::api_key::run(&command.data.options())),
                 "gentoken" => Some(commands::api_key::run(&command.data.options())),
                 "where_is" => Some(commands::where_is::run(&pool, &command.data.options()).await),
                 "server_info" => {
                     Some(commands::server_info::run(&pool, &command.data.options()).await)
                 }
+                "servers" => Some(commands::servers::run(&pool, &command.data.options()).await),
                 _ => {
                     let data =
                         CreateInteractionResponseMessage::new().content("not implemented :(");
@@ -78,7 +84,13 @@ impl EventHandler for Handler {
         );
 
         let _ssi_commands = guild_id
-            .set_commands(&ctx.http, vec![commands::api_key::register()])
+            .set_commands(
+                &ctx.http,
+                vec![
+                    commands::api_key::register(),
+                    commands::api_key::register_alias(),
+                ],
+            )
             .await
             .unwrap();
 
@@ -88,6 +100,7 @@ impl EventHandler for Handler {
                 commands::test::register(),
                 commands::where_is::register(),
                 commands::server_info::register(),
+                commands::servers::register(),
             ],
         )
         .await
