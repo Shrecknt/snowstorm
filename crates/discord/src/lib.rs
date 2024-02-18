@@ -9,6 +9,11 @@ use sqlx::PgPool;
 
 mod commands;
 
+pub const NUM_CODES: [&str; 10] = [
+    ":zero:", ":one:", ":two:", ":three:", ":four:", ":five:", ":six:", ":seven:", ":eight:",
+    ":nine:",
+];
+
 const DISCORD_BOT_TOKEN: &str = var!("DISCORD_BOT_TOKEN");
 pub const DISCORD_BOT_ID: &str = var!("DISCORD_BOT_ID");
 pub const DISCORD_BOT_GUILD_ID: &str = var!("DISCORD_BOT_GUILD_ID");
@@ -28,35 +33,36 @@ impl EventHandler for Handler {
             lock.get::<PoolData>().unwrap().clone()
         };
         if let Interaction::Autocomplete(command) = interaction {
-            println!("command = '{}'", command.data.name.as_str());
             let choices = match command.data.name.as_str() {
-                "whereis" => {
-                    Some(commands::whereis::run_autocomplete(&pool, &command.data.options()).await)
+                "where_is" => {
+                    Some(commands::where_is::run_autocomplete(&pool, &command.data.options()).await)
                 }
                 _ => None,
             };
-            println!("choices1 = {choices:?}");
             let choices = choices.unwrap_or(vec![]);
-            println!("choices2 = {choices:?}");
             let data = CreateAutocompleteResponse::new().set_choices(choices);
             let builder = CreateInteractionResponse::Autocomplete(data);
             if let Err(err) = command.create_response(&ctx.http, builder).await {
                 println!("Cannot respond to autocomplete request: {err}")
             }
         } else if let Interaction::Command(command) = interaction {
-            println!("Got command: {command:#?}");
-
-            let content = match command.data.name.as_str() {
+            let content: Option<CreateInteractionResponse> = match command.data.name.as_str() {
                 "test" => Some(commands::test::run(&command.data.options())),
                 "gentoken" => Some(commands::api_key::run(&command.data.options())),
-                "whereis" => Some(commands::whereis::run(&pool, &command.data.options()).await),
-                _ => Some("not implemented :(".to_string()),
+                "where_is" => Some(commands::where_is::run(&pool, &command.data.options()).await),
+                "server_info" => {
+                    Some(commands::server_info::run(&pool, &command.data.options()).await)
+                }
+                _ => {
+                    let data =
+                        CreateInteractionResponseMessage::new().content("not implemented :(");
+                    let builder = CreateInteractionResponse::Message(data);
+                    Some(builder)
+                }
             };
 
             if let Some(content) = content {
-                let data = CreateInteractionResponseMessage::new().content(content);
-                let builder = CreateInteractionResponse::Message(data);
-                if let Err(err) = command.create_response(&ctx.http, builder).await {
+                if let Err(err) = command.create_response(&ctx.http, content).await {
                     println!("Cannot respond to slash command: {err}");
                 }
             }
@@ -71,17 +77,23 @@ impl EventHandler for Handler {
                 .expect("DISCORD_GUILD_ID must be an integer"),
         );
 
-        let ssi_commands = guild_id
+        let _ssi_commands = guild_id
             .set_commands(&ctx.http, vec![commands::api_key::register()])
-            .await;
-        println!("SSI commands registered: {:#?}", ssi_commands);
+            .await
+            .unwrap();
 
-        let global_commands = Command::set_global_commands(
+        let _global_commands = Command::set_global_commands(
             &ctx.http,
-            vec![commands::test::register(), commands::whereis::register()],
+            vec![
+                commands::test::register(),
+                commands::where_is::register(),
+                commands::server_info::register(),
+            ],
         )
-        .await;
-        println!("Global commands registered: {:#?}", global_commands);
+        .await
+        .unwrap();
+
+        println!("Loaded application commands!");
     }
 }
 

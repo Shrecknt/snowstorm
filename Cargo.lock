@@ -3301,6 +3301,7 @@ dependencies = [
  "dotenvy_macro",
  "enum-utils",
  "eyre",
+ "parking_lot",
  "rand",
  "rayon",
  "sqlx",

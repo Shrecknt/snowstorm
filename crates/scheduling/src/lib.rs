@@ -289,12 +289,13 @@ impl ScanningMode {
 pub fn start_scheduler_queue(
     sender: Sender<Vec<SocketAddrV4Range>>,
     interval: Duration,
-    modes: Arc<ModePicker>,
+    modes: Arc<parking_lot::Mutex<ModePicker>>,
 ) {
     std::thread::spawn(move || {
         Runtime::new().unwrap().block_on(async move {
             loop {
                 let _ = sender.send(Vec::new());
+                let _new_mode = modes.lock().pick_random();
                 tokio::time::sleep(interval).await;
             }
         });

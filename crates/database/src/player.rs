@@ -27,7 +27,6 @@ impl PlayerInfo {
     }
 
     pub async fn autocomplete_username(username: &str, pool: &PgPool) -> AutocompleteResults {
-        println!("username = {username}");
         let players = sqlx::query_as(
             "SELECT id, uuid, username FROM players WHERE username ILIKE '%' || $1::TEXT || '%' LIMIT 16",
         )
@@ -35,7 +34,6 @@ impl PlayerInfo {
         .fetch_all(pool)
         .await
         .unwrap();
-        println!("players = {players:?}");
         AutocompleteResults::Username { players }
     }
 

@@ -1,8 +1,13 @@
-use serenity::{all::ResolvedOption, builder::CreateCommand};
+use serenity::{
+    all::ResolvedOption,
+    builder::{CreateCommand, CreateInteractionResponse, CreateInteractionResponseMessage},
+};
 
-pub fn run(_options: &[ResolvedOption]) -> String {
+pub fn run(_options: &[ResolvedOption]) -> CreateInteractionResponse {
     let token = "".to_string();
-    format!("Generated token {token}")
+    CreateInteractionResponse::Message(
+        CreateInteractionResponseMessage::new().content(format!("Generated token {token}")),
+    )
 }
 
 pub fn register() -> CreateCommand {

@@ -1,17 +1,28 @@
 use serenity::{
     all::{CommandOptionType, ResolvedOption, ResolvedValue},
-    builder::{CreateCommand, CreateCommandOption},
+    builder::{
+        CreateCommand, CreateCommandOption, CreateInteractionResponse,
+        CreateInteractionResponseMessage,
+    },
 };
 
-pub fn run(options: &[ResolvedOption]) -> String {
+pub fn run(options: &[ResolvedOption]) -> CreateInteractionResponse {
     if let Some(ResolvedOption {
         value: ResolvedValue::User(user, _),
         ..
     }) = options.first()
     {
-        format!("{}'s id is {}", user.tag(), user.id)
+        CreateInteractionResponse::Message(
+            CreateInteractionResponseMessage::new().content(format!(
+                "{}'s id is {}",
+                user.tag(),
+                user.id
+            )),
+        )
     } else {
-        "Please provide a valid user".to_string()
+        CreateInteractionResponse::Message(
+            CreateInteractionResponseMessage::new().content("Please provide a valid user"),
+        )
     }
 }
 

@@ -1,15 +1,15 @@
 use super::DbPush;
 use azalea_protocol::packets::status::clientbound_status_response_packet::ClientboundStatusResponsePacket;
 use serde::Serialize;
-use sqlx::Row;
+use sqlx::{PgPool, Row};
 use std::net::Ipv4Addr;
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, sqlx::FromRow)]
 pub struct PingResult {
     pub id: Option<i64>,
     // host info
-    pub ip: u32,
-    pub port: u16,
+    pub ip: i32,
+    pub port: i16,
     // ping results
     pub version_name: Option<String>,
     pub version_protocol: Option<i32>,
@@ -24,19 +24,23 @@ pub struct PingResult {
 }
 
 impl PingResult {
-    pub fn get_ip(&self) -> Ipv4Addr {
-        self.ip.into()
+    pub fn ip(&self) -> Ipv4Addr {
+        (self.ip as u32).into()
+    }
+
+    pub fn port(&self) -> u16 {
+        self.port as u16
     }
 
     pub fn set_ip(&mut self, ip: Ipv4Addr) {
-        self.ip = ip.into();
+        self.ip = u32::from(ip) as i32;
     }
 
     pub fn none(ip: Ipv4Addr, port: u16) -> Self {
         Self {
             id: None,
-            ip: ip.into(),
-            port,
+            ip: u32::from(ip) as i32,
+            port: port as i16,
             version_name: None,
             version_protocol: None,
             max_players: None,
@@ -52,8 +56,8 @@ impl PingResult {
     pub fn from_azalea(ip: Ipv4Addr, port: u16, value: &ClientboundStatusResponsePacket) -> Self {
         Self {
             id: None,
-            ip: ip.into(),
-            port,
+            ip: u32::from(ip) as i32,
+            port: port as i16,
             version_name: Some(value.version.name.clone()),
             version_protocol: Some(value.version.protocol),
             max_players: Some(value.players.max),
@@ -64,6 +68,42 @@ impl PingResult {
             discovered: 0,
             last_seen: 0,
         }
+    }
+
+    pub async fn from_player_id(player_id: i64, pool: &PgPool) -> Vec<Self> {
+        const QUERY_STRING: &str = "
+        WITH joins AS (
+            SELECT server_id FROM join_table WHERE player_id = $1::BIGINT
+        ) SELECT * FROM servers WHERE id IN (SELECT server_id FROM joins);
+        ";
+        sqlx::query_as(QUERY_STRING)
+            .bind(player_id)
+            .fetch_all(pool)
+            .await
+            .unwrap()
+    }
+
+    pub async fn from_ip_port(ip: &Ipv4Addr, port: u16, pool: &PgPool) -> Option<Self> {
+        const QUERY_STRING: &str = "
+        SELECT * FROM servers WHERE ip = $1::INT AND port = $2::SMALLINT;
+        ";
+        sqlx::query_as(QUERY_STRING)
+            .bind(u32::from(*ip) as i32)
+            .bind(port as i16)
+            .fetch_optional(pool)
+            .await
+            .unwrap()
+    }
+
+    pub async fn from_id(id: i64, pool: &PgPool) -> Option<Self> {
+        const QUERY_STRING: &str = "
+        SELECT * FROM servers WHERE id = $1::BIGINT;
+        ";
+        sqlx::query_as(QUERY_STRING)
+            .bind(id)
+            .fetch_optional(pool)
+            .await
+            .unwrap()
     }
 }
 
