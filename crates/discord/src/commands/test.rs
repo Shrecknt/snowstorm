@@ -1,7 +1,8 @@
+use crate::Template;
 use serenity::{
     all::{CommandOptionType, ResolvedOption, ResolvedValue},
     builder::{
-        CreateCommand, CreateCommandOption, CreateInteractionResponse,
+        CreateCommand, CreateCommandOption, CreateEmbed, CreateInteractionResponse,
         CreateInteractionResponseMessage,
     },
 };
@@ -12,13 +13,9 @@ pub fn run(options: &[ResolvedOption]) -> CreateInteractionResponse {
         ..
     }) = options.first()
     {
-        CreateInteractionResponse::Message(
-            CreateInteractionResponseMessage::new().content(format!(
-                "{}'s id is {}",
-                user.tag(),
-                user.id
-            )),
-        )
+        CreateInteractionResponse::Message(CreateInteractionResponseMessage::new().embed(
+            CreateEmbed::template().description(format!("{}'s id is {}", user.tag(), user.id)),
+        ))
     } else {
         CreateInteractionResponse::Message(
             CreateInteractionResponseMessage::new().content("Please provide a valid user"),

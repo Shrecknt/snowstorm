@@ -2,7 +2,8 @@ use dotenvy_macro::dotenv as var;
 use serenity::all::{Command, GuildId, Interaction, Ready};
 use serenity::async_trait;
 use serenity::builder::{
-    CreateAutocompleteResponse, CreateInteractionResponse, CreateInteractionResponseMessage,
+    CreateAutocompleteResponse, CreateEmbed, CreateInteractionResponse,
+    CreateInteractionResponseMessage,
 };
 use serenity::model::Color;
 use serenity::prelude::*;
@@ -23,6 +24,15 @@ pub const DISCORD_BOT_GUILD_ID: &str = var!("DISCORD_BOT_GUILD_ID");
 
 pub const EMBED_COLOR: Color = Color::from_rgb(30, 110, 220);
 pub const EMBED_COLOR_ERROR: Color = Color::from_rgb(250, 70, 70);
+
+trait Template {
+    fn template() -> Self;
+}
+impl Template for CreateEmbed {
+    fn template() -> Self {
+        Self::new().color(EMBED_COLOR)
+    }
+}
 
 pub fn sanitize<T: ToString>(content: T) -> String {
     content.to_string()

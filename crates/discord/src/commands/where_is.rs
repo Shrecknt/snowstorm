@@ -1,4 +1,4 @@
-use crate::{EMBED_COLOR, EMBED_COLOR_ERROR, NUM_CODES};
+use crate::{Template, EMBED_COLOR_ERROR, NUM_CODES};
 use database::autocomplete::AutocompleteResults;
 use serenity::{
     all::{CommandOptionType, ResolvedOption, ResolvedValue},
@@ -20,7 +20,7 @@ pub async fn run(pool: &PgPool, options: &[ResolvedOption<'_>]) -> CreateInterac
         let Ok(id) = id else {
             return CreateInteractionResponse::Message(
                 CreateInteractionResponseMessage::new().embed(
-                    CreateEmbed::new()
+                    CreateEmbed::template()
                         .color(EMBED_COLOR_ERROR)
                         .title("Invalid Argument")
                         .description(
@@ -48,8 +48,7 @@ pub async fn run(pool: &PgPool, options: &[ResolvedOption<'_>]) -> CreateInterac
                     )
                 })
                 .collect::<Vec<_>>();
-            let embed = CreateEmbed::new()
-                .color(EMBED_COLOR)
+            let embed = CreateEmbed::template()
                 .title(player.username)
                 .url(format!("https://snowstorm.shrecked.dev/player/{id}"))
                 .description(format!("{}\n{}", player.uuid, display_servers.join("\n")))
@@ -58,7 +57,7 @@ pub async fn run(pool: &PgPool, options: &[ResolvedOption<'_>]) -> CreateInterac
         } else {
             CreateInteractionResponse::Message(
                 CreateInteractionResponseMessage::new().embed(
-                    CreateEmbed::new()
+                    CreateEmbed::template()
                         .color(EMBED_COLOR_ERROR)
                         .title("Invalid Argument")
                         .description(
@@ -69,7 +68,7 @@ pub async fn run(pool: &PgPool, options: &[ResolvedOption<'_>]) -> CreateInterac
         }
     } else {
         CreateInteractionResponse::Message(CreateInteractionResponseMessage::new().embed(
-            CreateEmbed::new()
+            CreateEmbed::template()
                 .color(EMBED_COLOR_ERROR)
                 .title("Missing Argument")
                 .description("`username_uuid` argument not found.\nThis shouldn't be possible :/\nthanks discor"),

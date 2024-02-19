@@ -1,4 +1,4 @@
-use crate::EMBED_COLOR;
+use crate::Template;
 use serenity::{
     all::ResolvedOption,
     builder::{
@@ -9,11 +9,8 @@ use serenity::{
 pub fn run(_options: &[ResolvedOption]) -> CreateInteractionResponse {
     let token = "".to_string();
     CreateInteractionResponse::Message(
-        CreateInteractionResponseMessage::new().embed(
-            CreateEmbed::new()
-                .color(EMBED_COLOR)
-                .description(format!("Generated token {token}")),
-        ),
+        CreateInteractionResponseMessage::new()
+            .embed(CreateEmbed::template().description(format!("Generated token {token}"))),
     )
 }
 

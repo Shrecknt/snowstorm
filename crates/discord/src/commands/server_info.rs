@@ -1,4 +1,4 @@
-use crate::{ansi::mc_to_ansi, sanitize, EMBED_COLOR, EMBED_COLOR_ERROR};
+use crate::{ansi::mc_to_ansi, sanitize, Template, EMBED_COLOR_ERROR};
 use serenity::{
     all::{CommandOptionType, ResolvedOption, ResolvedValue},
     builder::{
@@ -18,7 +18,7 @@ pub async fn run(pool: &PgPool, options: &[ResolvedOption<'_>]) -> CreateInterac
         let Ok(addr) = SocketAddrV4::from_str(server) else {
             return CreateInteractionResponse::Message(
                 CreateInteractionResponseMessage::new().embed(
-                    CreateEmbed::new()
+                    CreateEmbed::template()
                         .color(EMBED_COLOR_ERROR)
                         .description("invalid int, use autocomplete ya goob"),
                 ),
@@ -43,8 +43,7 @@ pub async fn run(pool: &PgPool, options: &[ResolvedOption<'_>]) -> CreateInterac
                     .join("\n"),
                 None => "No MOTD".to_string(),
             };
-            let embed = CreateEmbed::new()
-                .color(EMBED_COLOR)
+            let embed = CreateEmbed::template()
                 .title(format!("{}:{}", server.ip(), server.port()))
                 .url(format!("https://snowstorm.shrecked.dev/server/{id}"))
                 .image(format!(
@@ -82,7 +81,7 @@ pub async fn run(pool: &PgPool, options: &[ResolvedOption<'_>]) -> CreateInterac
         } else {
             CreateInteractionResponse::Message(
                 CreateInteractionResponseMessage::new().embed(
-                    CreateEmbed::new()
+                    CreateEmbed::template()
                         .color(EMBED_COLOR_ERROR)
                         .description("use autocomplete u goober"),
                 ),
@@ -91,7 +90,7 @@ pub async fn run(pool: &PgPool, options: &[ResolvedOption<'_>]) -> CreateInterac
     } else {
         CreateInteractionResponse::Message(
             CreateInteractionResponseMessage::new().embed(
-                CreateEmbed::new()
+                CreateEmbed::template()
                     .color(EMBED_COLOR_ERROR)
                     .description("something weird happen"),
             ),
