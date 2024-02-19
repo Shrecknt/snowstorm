@@ -12,3 +12,5 @@ eyre = { workspace = true }
 uuid = { workspace = true }
 serenity = { workspace = true }
 tokio = { workspace = true }
+pretty-duration = { workspace = true }
+chrono = { workspace = true }

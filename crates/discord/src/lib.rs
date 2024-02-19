@@ -10,6 +10,8 @@ use sqlx::PgPool;
 
 mod commands;
 
+pub mod ansi;
+
 pub const NUM_CODES: [&str; 10] = [
     ":zero:", ":one:", ":two:", ":three:", ":four:", ":five:", ":six:", ":seven:", ":eight:",
     ":nine:",
@@ -21,6 +23,10 @@ pub const DISCORD_BOT_GUILD_ID: &str = var!("DISCORD_BOT_GUILD_ID");
 
 pub const EMBED_COLOR: Color = Color::from_rgb(30, 110, 220);
 pub const EMBED_COLOR_ERROR: Color = Color::from_rgb(250, 70, 70);
+
+pub fn sanitize<T: ToString>(content: T) -> String {
+    content.to_string()
+}
 
 pub struct PoolData;
 impl TypeMapKey for PoolData {

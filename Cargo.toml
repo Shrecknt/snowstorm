@@ -49,3 +49,5 @@ enum-utils = "0.1.2"
 dashmap = { version = "5.5.3", features = ["rayon"] }
 rayon = "1.8.1"
 serenity = "0.12.0"
+chrono = "0.4.34"
+pretty-duration = "0.1.1"
