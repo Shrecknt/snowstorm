@@ -1,0 +1,13 @@
+[package]
+name = "jwt"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+database = { workspace = true }
+serde = { workspace = true }
+time = { workspace = true }
+jsonwebtoken = { workspace = true }
+sqlx = { workspace = true }
+axum = { workspace = true }
+dotenvy_macro = { workspace = true }

@@ -1,4 +1,4 @@
-use super::{jwt::UserSession, ServerState};
+use super::ServerState;
 use axum::{
     extract::State,
     headers,
@@ -8,6 +8,7 @@ use axum::{
 };
 use bcrypt::{hash, verify, DEFAULT_COST};
 use database::{user::User, DbPush};
+use jwt::UserSession;
 use serde::Deserialize;
 
 #[derive(Deserialize, Debug, Clone)]

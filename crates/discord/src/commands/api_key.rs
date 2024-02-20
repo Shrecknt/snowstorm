@@ -1,16 +1,70 @@
-use crate::Template;
+use crate::{sanitize, Template, EMBED_COLOR_ERROR};
+use database::{discord_user::DiscordUserInfo, user::User};
+use jwt::UserSession;
 use serenity::{
-    all::ResolvedOption,
+    all::{ResolvedOption, UserId},
     builder::{
-        CreateCommand, CreateEmbed, CreateInteractionResponse, CreateInteractionResponseMessage,
+        CreateCommand, CreateEmbed, CreateEmbedFooter, CreateInteractionResponse,
+        CreateInteractionResponseMessage,
     },
 };
+use sqlx::PgPool;
 
-pub fn run(_options: &[ResolvedOption]) -> CreateInteractionResponse {
-    let token = "".to_string();
-    CreateInteractionResponse::Message(
-        CreateInteractionResponseMessage::new()
-            .embed(CreateEmbed::template().description(format!("Generated token {token}"))),
+pub async fn run(
+    pool: &PgPool,
+    discord_user_id: UserId,
+    _options: &[ResolvedOption<'_>],
+) -> (CreateInteractionResponse, bool) {
+    let discord_user_id = discord_user_id.to_string();
+    let user = DiscordUserInfo::get_discord_id(&discord_user_id, pool).await;
+    let Some(user) = user else {
+        return (CreateInteractionResponse::Message(
+            CreateInteractionResponseMessage::new().embed(
+                CreateEmbed::template()
+                    .color(EMBED_COLOR_ERROR)
+                    .title("Silly Goose")
+                    .description(
+                        "You can't generate a token without first being registered\nGo to https://snowstorm.shrecked.dev/signup to register",
+                    ),
+            ),
+        ), false);
+    };
+    let Some(user_id) = user.user_id else {
+        return (
+            CreateInteractionResponse::Message(CreateInteractionResponseMessage::new().embed(
+                CreateEmbed::template()
+                    .color(EMBED_COLOR_ERROR)
+                    .title("Silly Goose")
+                    .description(
+                        "Uhh I think you forgor to link your discor account to a Snowstorm account",
+                    ),
+            )),
+            false,
+        );
+    };
+    let session = UserSession::new_default(user_id);
+
+    let token = session.sign().unwrap();
+    let expires = session.exp.unix_timestamp();
+
+    let snowstorm_username = sanitize(User::get_id(user_id, pool).await.unwrap().username);
+
+    (
+        CreateInteractionResponse::Message(
+            CreateInteractionResponseMessage::new()
+                .ephemeral(true)
+                .embed(
+                    CreateEmbed::template()
+                        .title("Token Generated")
+                        .description(format!(
+                            "Your API key is `{token}`\nThis token will expire <t:{expires}:R>"
+                        ))
+                        .footer(CreateEmbedFooter::new(format!(
+                            "Using linked Snowstorm account '{snowstorm_username}'"
+                        ))),
+                ),
+        ),
+        true,
     )
 }
 

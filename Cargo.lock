@@ -1309,6 +1309,7 @@ dependencies = [
  "dotenvy",
  "dotenvy_macro",
  "eyre",
+ "jwt",
  "pretty-duration",
  "serenity",
  "sqlx",
@@ -2175,6 +2176,19 @@ dependencies = [
  "serde",
  "serde_json",
  "simple_asn1 0.6.2",
+]
+
+[[package]]
+name = "jwt"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "database",
+ "dotenvy_macro",
+ "jsonwebtoken",
+ "serde",
+ "sqlx",
+ "time",
 ]
 
 [[package]]
@@ -3617,6 +3631,7 @@ version = "0.1.0"
 dependencies = [
  "common",
  "database",
+ "discord",
  "dotenvy",
  "dotenvy_macro",
  "eyre",
@@ -4647,6 +4662,7 @@ dependencies = [
  "eyre",
  "io",
  "jsonwebtoken",
+ "jwt",
  "oauth2",
  "reqwest",
  "serde",

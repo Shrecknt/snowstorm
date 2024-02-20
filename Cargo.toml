@@ -7,6 +7,7 @@ snowstorm = { version = "0.1.0", path = "crates/snowstorm" }
 database = { version = "0.1.0", path = "crates/database" }
 common = { version = "0.1.0", path = "crates/common" }
 io = { version = "0.1.0", path = "crates/io" }
+jwt = { version = "0.1.0", path = "crates/jwt" }
 web = { version = "0.1.0", path = "crates/web" }
 scheduling = { version = "0.1.0", path = "crates/scheduling" }
 discord = { version = "0.1.0", path = "crates/discord" }

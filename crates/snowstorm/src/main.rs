@@ -57,6 +57,13 @@ async fn main() -> eyre::Result<()> {
         });
     }
 
+    if var!("BOT").to_lowercase() == *"true" {
+        let db = db.clone();
+        tokio::spawn(async move {
+            discord::run_bot(&db.pool).await;
+        });
+    }
+
     const CHANNEL_COUNT: usize = 8;
 
     let ping_handlers = {

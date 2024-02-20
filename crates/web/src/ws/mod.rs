@@ -1,8 +1,5 @@
 use super::ServerState;
-use crate::{
-    actions::web_actions::{actions_handler, WebActions},
-    jwt::UserSession,
-};
+use crate::actions::web_actions::{actions_handler, WebActions};
 use axum::{
     extract::{
         ws::{Message, WebSocket},
@@ -13,6 +10,7 @@ use axum::{
     TypedHeader,
 };
 use database::user::User;
+use jwt::UserSession;
 use serde_json::json;
 use std::net::SocketAddr;
 

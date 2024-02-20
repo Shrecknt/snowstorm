@@ -22,7 +22,6 @@ use tracing_subscriber::prelude::*;
 
 pub mod actions;
 pub mod authentication;
-pub mod jwt;
 
 mod api;
 mod oauth;

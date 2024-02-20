@@ -1,9 +1,9 @@
 use dotenvy_macro::dotenv as var;
-use serenity::all::{Command, GuildId, Interaction, Ready};
+use serenity::all::{ChannelId, Command, GuildId, Interaction, Ready};
 use serenity::async_trait;
 use serenity::builder::{
     CreateAutocompleteResponse, CreateEmbed, CreateInteractionResponse,
-    CreateInteractionResponseMessage,
+    CreateInteractionResponseMessage, CreateMessage,
 };
 use serenity::model::Color;
 use serenity::prelude::*;
@@ -68,8 +68,45 @@ impl EventHandler for Handler {
         } else if let Interaction::Command(command) = interaction {
             let content: Option<CreateInteractionResponse> = match command.data.name.as_str() {
                 "test" => Some(commands::test::run(&command.data.options())),
-                "api_key" => Some(commands::api_key::run(&command.data.options())),
-                "gentoken" => Some(commands::api_key::run(&command.data.options())),
+                "api_key" | "gentoken" => {
+                    const ALLOWED_CHANNEL_ID: ChannelId = ChannelId::new(1208338063072165908);
+                    if command.channel_id == ALLOWED_CHANNEL_ID {
+                        let (message, success) =
+                            commands::api_key::run(&pool, command.user.id, &command.data.options())
+                                .await;
+                        if success {
+                            let alert_res = ALLOWED_CHANNEL_ID
+                                .send_message(
+                                    &ctx.http,
+                                    CreateMessage::new().embed(
+                                        CreateEmbed::template()
+                                            .title("Token Generated")
+                                            .description(format!(
+                                                "<@{}> generated an API token",
+                                                command.user.id
+                                            )),
+                                    ),
+                                )
+                                .await;
+                            if let Err(err) = alert_res {
+                                println!("Cannot respond to jwt request: {err}");
+                                None
+                            } else {
+                                Some(message)
+                            }
+                        } else {
+                            Some(message)
+                        }
+                    } else {
+                        Some(CreateInteractionResponse::Message(
+                            CreateInteractionResponseMessage::new().embed(
+                                CreateEmbed::template().title("Nuh Uh !!!!!!").description(
+                                    format!("that's only allowed in <#{ALLOWED_CHANNEL_ID}> !!!!\nya silly goober"),
+                                ),
+                            ).ephemeral(true),
+                        ))
+                    }
+                }
                 "where_is" => Some(commands::where_is::run(&pool, &command.data.options()).await),
                 "server_info" => {
                     Some(commands::server_info::run(&pool, &command.data.options()).await)

@@ -1,6 +1,7 @@
-use crate::{jwt::UserSession, Action, ServerState};
+use crate::{Action, ServerState};
 use axum::{extract::State, headers, response::IntoResponse, Json, TypedHeader};
 use database::autocomplete::Autocomplete;
+use jwt::UserSession;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
