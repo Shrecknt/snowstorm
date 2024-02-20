@@ -1,5 +1,6 @@
 use crate::{Template, EMBED_COLOR_ERROR, NUM_CODES};
 use database::autocomplete::AutocompleteResults;
+use dotenvy_macro::dotenv as var;
 use serenity::{
     all::{CommandOptionType, ResolvedOption, ResolvedValue},
     builder::{
@@ -50,7 +51,7 @@ pub async fn run(pool: &PgPool, options: &[ResolvedOption<'_>]) -> CreateInterac
                 .collect::<Vec<_>>();
             let embed = CreateEmbed::template()
                 .title(player.username)
-                .url(format!("https://snowstorm.shrecked.dev/player/{id}"))
+                .url(format!("{}/player/{id}", var!("BASE_URI")))
                 .description(format!("{}\n{}", player.uuid, display_servers.join("\n")))
                 .footer(CreateEmbedFooter::new(format!("Query took {duration:?}")));
             CreateInteractionResponse::Message(CreateInteractionResponseMessage::new().embed(embed))

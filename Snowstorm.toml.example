@@ -1,0 +1,33 @@
+database_url = "postgres://postgres:postgres@localhost/snowstorm"
+
+[web]
+enabled = true
+listen_uri = "0.0.0.0:3000"
+domain = "snowstorm.example.com"
+
+[web.oauth.discord]
+enabled = true
+redirect_uri = "https://snowstorm.example.com/oauth2_discord"
+client_id = "1234567890123456789"
+client_secret = "abcdefghijklmnopqrst-uvwxy-zabcd"
+guild_id = "1234567890123456789"
+
+[web.oauth.forgejo]
+enabled = true
+redirect_uri = "https://snowstorm.example.com/oauth2_forgejo"
+client_id = "abcdefgh-ijkl-mnop-qrst-uvwxyzabcdef"
+client_secret = "gto_abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz"
+base_authorize_uri = "https://git.example.com/login/oauth/authorize"
+base_token_uri = "https://git.example.com/login/oauth/access_token"
+user_api_uri = "https://git.example.com/api/v1/user"
+
+[jwt]
+secret = "some random key"
+
+[scanner]
+interface_name = "eth0"
+task_size_sanity_limit = 1000000
+
+[bot]
+token = "abcdefghijklmnopqrstuvwxyz.abcdef.ghijklmnopqrstuvwxyzabcdefghijklmnopqr"
+bot_id = "1234567890123456789"

@@ -1,4 +1,5 @@
 use crate::{Template, EMBED_COLOR_ERROR};
+use dotenvy_macro::dotenv as var;
 use serenity::{
     all::{CommandOptionType, ResolvedOption, ResolvedValue},
     builder::{
@@ -15,12 +16,16 @@ pub async fn run(pool: &PgPool, options: &[ResolvedOption<'_>]) -> CreateInterac
         ..
     }) = options.first()
     {
-        let Ok(addr) = SocketAddrV4::from_str(server) else {
+        let addr = SocketAddrV4::from_str(server);
+        let Ok(addr) = addr else {
             return CreateInteractionResponse::Message(
                 CreateInteractionResponseMessage::new().embed(
                     CreateEmbed::template()
                         .color(EMBED_COLOR_ERROR)
-                        .description("invalid int, use autocomplete ya goob"),
+                        .title("Invalid Argument")
+                        .description(format!(
+                            "Failed to parse string as SocketV4Addr\n\n`{addr:?}`"
+                        )),
                 ),
             );
         };
@@ -33,14 +38,17 @@ pub async fn run(pool: &PgPool, options: &[ResolvedOption<'_>]) -> CreateInterac
             let id = server.id.unwrap();
             let embed = CreateEmbed::template()
                 .title(format!("{}:{}", server.ip(), server.port()))
-                .url(format!("https://snowstorm.shrecked.dev/server/{id}"))
+                .url(format!("{}/server/{id}", var!("BASE_URI")))
                 .description(format!(
                     "{}\ndiscovered = {}, last seen = {}",
                     server.description.unwrap_or("No description".to_string()),
                     server.discovered,
                     server.last_seen
                 ))
-                .footer(CreateEmbedFooter::new(format!("Query took {duration:?}")));
+                .footer(CreateEmbedFooter::new(format!(
+                    "Query took {duration:?} \u{2022} Found {} servers",
+                    "todo!()"
+                )));
             CreateInteractionResponse::Message(CreateInteractionResponseMessage::new().embed(embed))
         } else {
             CreateInteractionResponse::Message(

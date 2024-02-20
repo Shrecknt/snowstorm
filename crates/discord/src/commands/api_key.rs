@@ -1,5 +1,6 @@
 use crate::{sanitize, Template, EMBED_COLOR_ERROR};
 use database::{discord_user::DiscordUserInfo, user::User};
+use dotenvy_macro::dotenv as var;
 use jwt::UserSession;
 use serenity::{
     all::{ResolvedOption, UserId},
@@ -24,7 +25,7 @@ pub async fn run(
                     .color(EMBED_COLOR_ERROR)
                     .title("Silly Goose")
                     .description(
-                        "You can't generate a token without first being registered\nGo to https://snowstorm.shrecked.dev/signup to register",
+                        format!("You can't generate a token without first being registered\nGo to {}/signup to register\nAnd sign up with Discord so the bot can actually know who you are kthxbye", var!("BASE_URI")),
                     ),
             ),
         ), false);
