@@ -1,5 +1,4 @@
 use crate::{Template, EMBED_COLOR_ERROR};
-use dotenvy_macro::dotenv as var;
 use serenity::{
     all::{CommandOptionType, ResolvedOption, ResolvedValue},
     builder::{
@@ -38,7 +37,7 @@ pub async fn run(pool: &PgPool, options: &[ResolvedOption<'_>]) -> CreateInterac
             let id = server.id.unwrap();
             let embed = CreateEmbed::template()
                 .title(format!("{}:{}", server.ip(), server.port()))
-                .url(format!("{}/server/{id}", var!("BASE_URI")))
+                .url(format!("https://{}/server/{id}", config::get().web.domain))
                 .description(format!(
                     "{}\ndiscovered = {}, last seen = {}",
                     server.description.unwrap_or("No description".to_string()),

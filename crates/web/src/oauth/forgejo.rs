@@ -10,7 +10,6 @@ use axum::{
     Form, TypedHeader,
 };
 use database::{forgejo_user::ForgejoUserInfo, user::User, DbPush};
-use dotenvy_macro::dotenv as var;
 use oauth2::{
     basic::{BasicClient, BasicTokenType},
     AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken, EmptyExtraTokenFields,
@@ -117,25 +116,25 @@ pub async fn link_account(
     (get_auth_cookies(&user), Redirect::to("/dashboard"))
 }
 
-pub const BASE_AUTHORIZE_URI: &str = var!("FORGEJO_BASE_AUTHORIZE_URL");
-pub const BASE_TOKEN_URI: &str = var!("FORGEJO_BASE_TOKEN_URI");
-
 async fn try_oauth(
     oauth2_parameters: Oauth2Parameters,
 ) -> eyre::Result<(
     StandardTokenResponse<EmptyExtraTokenFields, BasicTokenType>,
     ForgejoUserInfo,
 )> {
-    let redirect_uri = var!("FORGEJO_REDIRECT_URI");
-    let client_id = var!("FORGEJO_CLIENT_ID");
-    let client_secret = var!("FORGEJO_CLIENT_SECRET");
-    // let guild_id = var!("FORGEJO_GUILD_ID");
+    let config = config::get();
+    let forgejo_config = &config.web.oauth.forgejo;
+    let redirect_uri = forgejo_config.redirect_uri.to_owned();
+    let client_id = forgejo_config.client_id.to_owned();
+    let client_secret = forgejo_config.client_secret.to_owned();
+    let base_authorize_uri = forgejo_config.base_authorize_uri.to_owned();
+    let base_token_uri = forgejo_config.base_token_uri.to_owned();
 
     let client = BasicClient::new(
         ClientId::new(client_id.to_string()),
         Some(ClientSecret::new(client_secret.to_string())),
-        AuthUrl::new(BASE_AUTHORIZE_URI.to_string())?,
-        Some(TokenUrl::new(BASE_TOKEN_URI.to_string())?),
+        AuthUrl::new(base_authorize_uri.to_string())?,
+        Some(TokenUrl::new(base_token_uri.to_string())?),
     )
     .set_redirect_uri(RedirectUrl::new(redirect_uri.to_string())?);
 
@@ -148,7 +147,7 @@ async fn try_oauth(
 
     let client = reqwest::Client::new();
     let forgejo_user_info = client
-        .get(var!("FORGEJO_USER_API_URI"))
+        .get(forgejo_config.user_api_uri.to_owned())
         .bearer_auth(token_result.access_token().secret())
         .send()
         .await?

@@ -39,6 +39,10 @@ impl Config {
     }
 }
 
+pub fn get() -> Arc<Config> {
+    Config::get()
+}
+
 #[derive(Deserialize, SmartDefault)]
 pub struct WebConfig {
     #[serde(default = "_true")]
@@ -70,6 +74,7 @@ pub struct BotConfig {
     pub enabled: bool,
     pub token: String,
     pub bot_id: String,
+    pub guild_id: String,
 }
 
 #[derive(Deserialize, SmartDefault)]

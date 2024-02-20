@@ -25,9 +25,11 @@ user_api_uri = "https://git.example.com/api/v1/user"
 secret = "some random key"
 
 [scanner]
+enabled = true
 interface_name = "eth0"
 task_size_sanity_limit = 1000000
 
 [bot]
 token = "abcdefghijklmnopqrstuvwxyz.abcdef.ghijklmnopqrstuvwxyzabcdefghijklmnopqr"
 bot_id = "1234567890123456789"
+guild_id = "1234567890123456789"

@@ -4,8 +4,6 @@ use std::io::Write;
 
 #[tokio::main]
 async fn main() -> eyre::Result<()> {
-    dotenvy::dotenv().expect(".env file not found");
-
     let db = DatabaseConnection::new().await?;
 
     let mut modes = ModePicker::new_all();

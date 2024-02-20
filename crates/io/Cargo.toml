@@ -6,10 +6,10 @@ edition = "2021"
 [dependencies]
 database = { workspace = true }
 common = { workspace = true }
+config = { workspace = true }
 eyre = { workspace = true }
 tokio = { workspace = true }
 csv = { workspace = true }
-dotenvy_macro = { workspace = true }
 lazy_static = { workspace = true }
 rand = { workspace = true }
 boringtun = { workspace = true }

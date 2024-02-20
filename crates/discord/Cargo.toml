@@ -6,8 +6,7 @@ edition = "2021"
 [dependencies]
 database = { workspace = true }
 jwt = { workspace = true }
-dotenvy = { workspace = true }
-dotenvy_macro = { workspace = true }
+config = { workspace = true }
 sqlx = { workspace = true }
 eyre = { workspace = true }
 uuid = { workspace = true }

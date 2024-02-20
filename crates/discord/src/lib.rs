@@ -1,4 +1,3 @@
-use dotenvy_macro::dotenv as var;
 use serenity::all::{ChannelId, Command, GuildId, Interaction, Ready};
 use serenity::async_trait;
 use serenity::builder::{
@@ -17,10 +16,6 @@ pub const NUM_CODES: [&str; 10] = [
     ":zero:", ":one:", ":two:", ":three:", ":four:", ":five:", ":six:", ":seven:", ":eight:",
     ":nine:",
 ];
-
-const DISCORD_BOT_TOKEN: &str = var!("DISCORD_BOT_TOKEN");
-pub const DISCORD_BOT_ID: &str = var!("DISCORD_BOT_ID");
-pub const DISCORD_BOT_GUILD_ID: &str = var!("DISCORD_BOT_GUILD_ID");
 
 pub const EMBED_COLOR: Color = Color::from_rgb(30, 110, 220);
 pub const EMBED_COLOR_ERROR: Color = Color::from_rgb(250, 70, 70);
@@ -131,7 +126,9 @@ impl EventHandler for Handler {
         println!("{} is connected!", ready.user.name);
 
         let guild_id = GuildId::new(
-            DISCORD_BOT_GUILD_ID
+            config::get()
+                .bot
+                .guild_id
                 .parse()
                 .expect("DISCORD_GUILD_ID must be an integer"),
         );
@@ -165,7 +162,7 @@ impl EventHandler for Handler {
 
 pub async fn run_bot(pool: &PgPool) {
     let intents = GatewayIntents::non_privileged() | GatewayIntents::GUILD_MEMBERS;
-    let mut client = Client::builder(DISCORD_BOT_TOKEN, intents)
+    let mut client = Client::builder(&config::get().bot.token, intents)
         .event_handler(Handler)
         .await
         .expect("Error creating client");

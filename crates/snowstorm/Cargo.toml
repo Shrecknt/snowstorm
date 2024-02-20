@@ -10,6 +10,5 @@ database = { workspace = true }
 web = { workspace = true }
 common = { workspace = true }
 discord = { workspace = true }
-dotenvy = { workspace = true }
-dotenvy_macro = { workspace = true }
+config = { workspace = true }
 eyre = { workspace = true }

@@ -1,4 +1,3 @@
-use dotenvy_macro::dotenv as var;
 use sqlx::{postgres::PgPoolOptions, PgPool, Row};
 use std::net::Ipv4Addr;
 
@@ -11,7 +10,7 @@ impl DatabaseConnection {
     pub async fn new() -> Result<Self, sqlx::Error> {
         let pool = PgPoolOptions::new()
             .max_connections(8)
-            .connect(var!("DATABASE_URL"))
+            .connect(&config::get().database_url)
             .await?;
         Ok(Self { pool })
     }

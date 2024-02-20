@@ -7,7 +7,6 @@ use axum::{
     Router,
 };
 use database::DatabaseConnection;
-use dotenvy_macro::dotenv as var;
 use io::modes::ScanningMode;
 use io::ScannerState;
 use reqwest::StatusCode;
@@ -75,7 +74,7 @@ pub async fn start_server(
     );
     let routes = routes.with_state(server_state);
 
-    let listener = SocketAddr::from_str(var!("WEB_LISTEN_URL"))?;
+    let listener = SocketAddr::from_str(&config::get().web.listen_uri)?;
     axum::Server::bind(&listener)
         .serve(routes.into_make_service_with_connect_info::<SocketAddr>())
         .await?;

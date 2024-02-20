@@ -1,7 +1,6 @@
 #![feature(linked_list_remove)]
 
 use database::{player::PlayerInfo, server::PingResult, DatabaseConnection, DbPush};
-use dotenvy_macro::dotenv as var;
 use io::{
     modes::{self, ModeCursors, ScanningMode},
     Io, ScannerState,
@@ -20,8 +19,7 @@ use web::actions::action::Action;
 
 #[tokio::main]
 async fn main() -> eyre::Result<()> {
-    dotenvy::dotenv().expect(".env file not found");
-
+    let config = config::get();
     let db = DatabaseConnection::new().await?;
     let state = Arc::new(Mutex::new(ScannerState::default()));
     let (ping_results_sender, ping_results) = channel();
@@ -33,7 +31,7 @@ async fn main() -> eyre::Result<()> {
     #[cfg(not(debug_assertions))]
     let pinger = io::pnet::PnetScanner::new(state.clone(), ping_results_sender);
 
-    if var!("PING").to_lowercase() == *"true" {
+    if config.scanner.enabled {
         let db = db.clone();
         let state = state.clone();
         let mode_queue = mode_queue.clone();
@@ -45,7 +43,7 @@ async fn main() -> eyre::Result<()> {
         });
     }
 
-    if var!("WEB").to_lowercase() == *"true" {
+    if config.web.enabled {
         let db = db.clone();
         let state = state.clone();
         let mode_queue = mode_queue.clone();
@@ -57,7 +55,7 @@ async fn main() -> eyre::Result<()> {
         });
     }
 
-    if var!("BOT").to_lowercase() == *"true" {
+    if config.bot.enabled {
         let db = db.clone();
         tokio::spawn(async move {
             discord::run_bot(&db.pool).await;

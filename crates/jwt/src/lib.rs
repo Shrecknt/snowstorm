@@ -1,6 +1,5 @@
 use axum::{headers, TypedHeader};
 use database::user::User;
-use dotenvy_macro::dotenv as var;
 use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
@@ -29,7 +28,7 @@ impl UserSession {
         jsonwebtoken::encode(
             &Header::default(),
             &self,
-            &EncodingKey::from_secret(var!("JWT_SECRET").as_ref()),
+            &EncodingKey::from_secret(config::get().jwt.secret.as_ref()),
         )
     }
 
@@ -38,7 +37,7 @@ impl UserSession {
         validation.set_required_spec_claims::<String>(&[]);
         Ok(jsonwebtoken::decode::<Self>(
             token,
-            &DecodingKey::from_secret(var!("JWT_SECRET").as_ref()),
+            &DecodingKey::from_secret(config::get().jwt.secret.as_ref()),
             &validation,
         )?
         .claims)

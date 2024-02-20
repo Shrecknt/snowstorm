@@ -19,7 +19,7 @@ Scan the entire ipv4 address space for Minecraft servers, with dynamic scanning 
 - npm 10.2.4 - for webui
 - A postgres database
 
-Other versions of some of the listed programs will probably work but it is not recommended. Rust must be nightly as this program uses async traits which are not in the current latest stable release.
+Other versions of some of the listed programs will probably work but it is not recommended.
 
 ## Installation
 
@@ -31,8 +31,8 @@ I was too lazy to figure out how environment variables work with svelte, so you 
 ```sh
 git clone https://git.shrecked.dev/Shrecknt/snowstorm.git
 cd snowstorm
-cp .env.example .env
-nano .env # modify .env to your liking
+cp Snowstorm.toml.example Snowstorm.toml
+nano Snowstorm.toml # modify Snowstorm.toml to your liking
 cd web
 npm run build
 cd ..

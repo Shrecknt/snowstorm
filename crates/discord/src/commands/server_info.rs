@@ -1,5 +1,4 @@
 use crate::{ansi::mc_to_ansi, sanitize, Template, EMBED_COLOR_ERROR};
-use dotenvy_macro::dotenv as var;
 use serenity::{
     all::{CommandOptionType, ResolvedOption, ResolvedValue},
     builder::{
@@ -50,8 +49,11 @@ pub async fn run(pool: &PgPool, options: &[ResolvedOption<'_>]) -> CreateInterac
             };
             let embed = CreateEmbed::template()
                 .title(format!("{}:{}", server.ip(), server.port()))
-                .url(format!("{}/server/{id}", var!("BASE_URI")))
-                .image(format!("{}/server/{id}/favicon.png", var!("BASE_URI")))
+                .url(format!("https://{}/server/{id}", config::get().web.domain))
+                .image(format!(
+                    "https://{}/server/{id}/favicon.png",
+                    config::get().web.domain
+                ))
                 .description(format!("```ansi\n{}\n```", motd))
                 .field(
                     "Server Version",
