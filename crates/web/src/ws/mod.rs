@@ -1,5 +1,4 @@
 use super::ServerState;
-use crate::actions::web_actions::{actions_handler, WebActions};
 use axum::{
     extract::{
         ws::{Message, WebSocket},
@@ -11,7 +10,7 @@ use axum::{
 };
 use database::user::User;
 use jwt::UserSession;
-use serde_json::json;
+use serde_json::{json, Value};
 use std::net::SocketAddr;
 
 #[allow(clippy::unused_async)]
@@ -48,8 +47,8 @@ pub async fn ws_handler(
 async fn handle_socket(
     mut socket: WebSocket,
     who: SocketAddr,
-    server_state: State<ServerState>,
-    user: Option<User>,
+    _server_state: State<ServerState>,
+    _user: Option<User>,
 ) {
     let _ = socket.send(Message::Ping(vec![1, 2, 3])).await;
 
@@ -65,7 +64,7 @@ async fn handle_socket(
                     continue;
                 }
 
-                let action: WebActions = match serde_json::from_str(text) {
+                let message: Value = match serde_json::from_str(text) {
                     Ok(action) => action,
                     Err(err) => {
                         let _ = socket
@@ -77,25 +76,7 @@ async fn handle_socket(
                     }
                 };
 
-                if let Some(user) = &user {
-                    if user.permission_level >= 1 {
-                        let result = actions_handler(action, &server_state).await;
-                        let _ = socket.send(Message::Text(result.to_string())).await;
-                    } else {
-                        let _ = socket
-                            .send(Message::Text(
-                                json!({"success": false, "msg": "insufficient permissions"})
-                                    .to_string(),
-                            ))
-                            .await;
-                    }
-                } else {
-                    let _ = socket
-                        .send(Message::Text(
-                            json!({"success": false, "msg": "authentication error"}).to_string(),
-                        ))
-                        .await;
-                }
+                println!("message: {message:?}");
             }
             Err(err) => {
                 println!("err: {}", err);

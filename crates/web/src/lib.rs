@@ -1,5 +1,3 @@
-use crate::actions::action::Action;
-use actions::web_actions::web_actions_handler;
 use axum::{
     body::{boxed, Body, BoxBody},
     http::{Request, Response, Uri},
@@ -7,10 +5,9 @@ use axum::{
     Router,
 };
 use database::DatabaseConnection;
-use io::modes::ScanningMode;
 use io::ScannerState;
 use reqwest::StatusCode;
-use std::{collections::LinkedList, net::SocketAddr, str::FromStr, sync::Arc, time::Duration};
+use std::{net::SocketAddr, str::FromStr, sync::Arc};
 use tokio::sync::Mutex;
 use tower::ServiceExt;
 use tower_http::services::ServeDir;
@@ -19,7 +16,6 @@ use tower_http::trace::{DefaultMakeSpan, TraceLayer};
 #[cfg(debug_assertions)]
 use tracing_subscriber::prelude::*;
 
-pub mod actions;
 pub mod authentication;
 
 mod api;
@@ -30,15 +26,11 @@ mod ws;
 pub struct ServerState {
     pub db: DatabaseConnection,
     pub state: Arc<Mutex<ScannerState>>,
-    pub mode_queue: Arc<Mutex<LinkedList<(ScanningMode, Duration)>>>,
-    pub action_queue: Arc<Mutex<LinkedList<Action>>>,
 }
 
 pub async fn start_server(
     db: DatabaseConnection,
     state: Arc<Mutex<ScannerState>>,
-    mode_queue: Arc<Mutex<LinkedList<(ScanningMode, Duration)>>>,
-    action_queue: Arc<Mutex<LinkedList<Action>>>,
 ) -> eyre::Result<()> {
     #[cfg(debug_assertions)]
     tracing_subscriber::registry()
@@ -49,12 +41,7 @@ pub async fn start_server(
         .with(tracing_subscriber::fmt::layer())
         .init();
 
-    let server_state = ServerState {
-        db,
-        state,
-        mode_queue,
-        action_queue,
-    };
+    let server_state = ServerState { db, state };
 
     let routes = Router::new()
         .nest_service("/", get(handler))
@@ -64,7 +51,6 @@ pub async fn start_server(
         .route("/auth/discord", post(oauth::discord::link_account))
         .route("/auth/forgejo", post(oauth::forgejo::link_account))
         .route("/auth/info", get(authentication::info))
-        .route("/actions", post(web_actions_handler))
         .route("/oauth2", get(oauth::discord::oauth2))
         .route("/oauth2_discord", get(oauth::discord::oauth2))
         .route("/oauth2_forgejo", get(oauth::forgejo::oauth2));

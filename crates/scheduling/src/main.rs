@@ -1,3 +1,4 @@
+use common::network_range::RangesExt;
 use database::DatabaseConnection;
 use scheduling::{ModePicker, ScanningMode};
 use std::io::Write;
@@ -12,7 +13,7 @@ async fn main() -> eyre::Result<()> {
         print!("Running {:?}...", mode);
         std::io::stdout().flush().unwrap();
         let ranges = mode.get_addresses(&db.pool).await?;
-        modes.update(mode, ranges.len());
+        modes.update(mode, ranges.count_addresses());
         println!(
             " found {} ranges, new state: {:?}",
             ranges.len(),

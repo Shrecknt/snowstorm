@@ -7,7 +7,7 @@ use common::net::{
 };
 use database::{player::PlayerInfo, server::PingResult};
 use std::{
-    net::{Ipv4Addr, SocketAddrV4},
+    net::SocketAddrV4,
     sync::{mpsc::Sender, Arc},
 };
 use tokio::sync::Mutex;
@@ -40,8 +40,7 @@ impl PnetScanner {
 }
 
 impl Io for PnetScanner {
-    async fn ping(&mut self, addr: Ipv4Addr, port: u16) -> Result<(), eyre::Report> {
-        let addr = SocketAddrV4::new(addr, port);
+    async fn ping(&mut self, addr: SocketAddrV4) -> Result<(), eyre::Report> {
         let addr_cookie = cookie(&addr, *COOKIE_SEED);
         self.syn_writer.send_syn(
             addr,
@@ -51,8 +50,7 @@ impl Io for PnetScanner {
         Ok(())
     }
 
-    async fn legacy_ping(&mut self, addr: Ipv4Addr, port: u16) -> Result<(), eyre::Report> {
-        let addr = SocketAddrV4::new(addr, port);
+    async fn legacy_ping(&mut self, addr: SocketAddrV4) -> Result<(), eyre::Report> {
         let addr_cookie = cookie(&addr, *COOKIE_SEED);
         self.syn_writer.send_syn(
             addr,

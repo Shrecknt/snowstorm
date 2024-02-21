@@ -1,12 +1,10 @@
 #![feature(linked_list_remove)]
 
+use common::network_range::RangesExt;
 use database::{player::PlayerInfo, server::PingResult, DatabaseConnection, DbPush};
-use io::{
-    modes::{self, ModeCursors, ScanningMode},
-    Io, ScannerState,
-};
+use io::{Io, ScannerState};
+use scheduling::ModePicker;
 use std::{
-    collections::LinkedList,
     sync::{
         mpsc::{channel, Sender},
         Arc,
@@ -15,7 +13,6 @@ use std::{
     time::{Duration, Instant},
 };
 use tokio::{runtime::Runtime, sync::Mutex};
-use web::actions::action::Action;
 
 #[tokio::main]
 async fn main() -> eyre::Result<()> {
@@ -23,8 +20,6 @@ async fn main() -> eyre::Result<()> {
     let db = DatabaseConnection::new().await?;
     let state = Arc::new(Mutex::new(ScannerState::default()));
     let (ping_results_sender, ping_results) = channel();
-    let mode_queue = Arc::new(Mutex::new(LinkedList::new()));
-    let action_queue = Arc::new(Mutex::new(LinkedList::new()));
 
     #[cfg(debug_assertions)]
     let pinger = io::database::DatabaseScanner::new(state.clone(), ping_results_sender);
@@ -34,24 +29,16 @@ async fn main() -> eyre::Result<()> {
     if config.scanner.enabled {
         let db = db.clone();
         let state = state.clone();
-        let mode_queue = mode_queue.clone();
-        let action_queue = action_queue.clone();
         tokio::spawn(async move {
-            ping_loop(db, state, mode_queue, action_queue, pinger)
-                .await
-                .unwrap();
+            ping_loop(db, state, pinger).await.unwrap();
         });
     }
 
     if config.web.enabled {
         let db = db.clone();
         let state = state.clone();
-        let mode_queue = mode_queue.clone();
-        let action_queue = action_queue.clone();
         tokio::spawn(async move {
-            web::start_server(db, state, mode_queue, action_queue)
-                .await
-                .unwrap();
+            web::start_server(db, state).await.unwrap();
         });
     }
 
@@ -67,16 +54,19 @@ async fn main() -> eyre::Result<()> {
     let ping_handlers = {
         let mut handlers: Vec<Sender<_>> = Vec::with_capacity(CHANNEL_COUNT);
         for _ in 0..CHANNEL_COUNT {
+            let config = config.clone();
             let db = db.clone();
             let (w, r) = channel::<(PingResult, Vec<PlayerInfo>)>();
             handlers.push(w);
             thread::spawn(move || {
                 let r = r;
                 while let Ok(mut values) = r.recv() {
-                    Runtime::new()
-                        .unwrap()
-                        .block_on(values.push(&db.pool))
-                        .unwrap();
+                    if config.scanner.push_to_db {
+                        Runtime::new()
+                            .unwrap()
+                            .block_on(values.push(&db.pool))
+                            .unwrap();
+                    }
                 }
             });
         }
@@ -97,110 +87,88 @@ async fn main() -> eyre::Result<()> {
     Ok(())
 }
 
-async fn ping_loop<T: Io>(
+async fn ping_loop(
     db: DatabaseConnection,
     state: Arc<Mutex<ScannerState>>,
-    mode_queue: Arc<Mutex<LinkedList<(ScanningMode, Duration)>>>,
-    action_queue: Arc<Mutex<LinkedList<Action>>>,
-    mut pinger: T,
+    mut pinger: impl Io,
 ) -> eyre::Result<()> {
-    let mut cursors = ModeCursors::new();
-    let mut mode = ScanningMode::Paused {};
-    let mut current_mode_duration = Duration::MAX;
+    let config = config::get();
 
-    let mut time = Instant::now();
+    let mut request_state = RequestState::None;
+    let mode_picker = Arc::new(parking_lot::Mutex::new(ModePicker::new()));
+    let requester = channel();
+    let receiver = channel();
+    scheduling::start_scheduler_queue(receiver.0, requester.1, mode_picker, db.pool);
+
+    // We don't have any data yet, so request the scheduler for addresses without providing any data
+    requester.0.send(None)?;
+    let (mut current_mode, mut current_addresses) = receiver.1.recv()?;
+    println!("got new state {current_mode:?}");
+    let mut total_addresses = current_addresses.count_addresses();
+    assert_ne!(total_addresses, 0);
+    println!("total addresses = {total_addresses}");
+    let mut index = 0;
+
+    let mut last_update = Instant::now();
     loop {
-        let now = Instant::now();
-        let delta = now - time;
-
-        if delta > current_mode_duration {
-            time = now;
-
-            let mut state = state.lock().await;
-
-            println!(
-                "Servers found for ScanningMode::{:?}: {}",
-                mode, state.discovered
-            );
-            state.discovered = 0;
-
-            drop(state); // prevent deadlock
-
-            if let Some((new_mode, duration)) = mode_queue.lock().await.pop_front() {
-                mode = new_mode;
-                current_mode_duration = duration;
-            } else {
-                match &mode {
-                    ScanningMode::Auto {} => {}
-                    ScanningMode::Paused {} | ScanningMode::Rescan { .. } => {
-                        mode = ScanningMode::Paused {};
-                        current_mode_duration = Duration::MAX;
+        if index % 2u64.pow(16) == 0 {
+            match request_state {
+                RequestState::None => {
+                    let current_time = Instant::now();
+                    let duration_since_last_update = current_time - last_update;
+                    if duration_since_last_update
+                        > Duration::from_secs(config.scanner.mode_duration)
+                    {
+                        let discovered = state.lock().await.discovered
+                            * config.scanner.mode_duration
+                            / duration_since_last_update.as_secs().max(1);
+                        println!("discovered {discovered} servers (extrapolated to duration)");
+                        requester.0.send(Some((current_mode, discovered)))?;
+                        request_state = RequestState::Requested;
+                        println!("requesting new state");
+                        continue;
                     }
-                    _ => {
-                        let rescan_data = db.get_rescan().await.unwrap();
-                        mode = ScanningMode::Rescan { ips: rescan_data };
+                }
+                RequestState::Requested => {
+                    if let Ok(new_state) = receiver.1.try_recv() {
+                        (current_mode, current_addresses) = new_state;
+                        total_addresses = current_addresses.count_addresses();
+                        assert_ne!(total_addresses, 0);
+                        index = 0;
+                        request_state = RequestState::None;
+                        last_update = Instant::now();
+                        state.lock().await.discovered = 0;
+                        println!("got new state {current_mode:?}");
+                        continue;
                     }
                 }
             }
         }
-
-        match mode {
-            ScanningMode::Paused {} => {}
-            ScanningMode::Discovery {} => {
-                modes::discovery(&mut pinger, &mut cursors.discovery).await?;
-            }
-            ScanningMode::DiscoveryTopPorts {} => {
-                modes::discovery_top(&mut pinger, &mut cursors.discovery_top_ports).await?;
-            }
-            ScanningMode::Range { ref range } => {
-                modes::range(&mut pinger, &mut cursors.range, range).await?;
-            }
-            ScanningMode::RangeTopPorts { ref range } => {
-                modes::range_top(&mut pinger, &mut cursors.range_top_ports, range).await?;
-            }
-            ScanningMode::AllPorts { ip } => {
-                modes::all_ports(&mut pinger, &mut cursors.all_ports, ip).await?;
-            }
-            ScanningMode::Rescan { ref ips } => {
-                modes::rescan(&mut pinger, &mut cursors.rescan, ips).await?;
-            }
-            ScanningMode::Auto {} => {
-                modes::auto(&mut pinger, &mut cursors).await?;
-            }
+        if index >= total_addresses {
+            let duration_since_last_update = Instant::now() - last_update;
+            let discovered = state.lock().await.discovered * config.scanner.mode_duration
+                / duration_since_last_update.as_secs().max(1);
+            println!("discovered {discovered} servers (extrapolated to duration)");
+            requester.0.send(Some((current_mode, discovered)))?;
+            println!("requesting new state (ended early)");
+            (current_mode, current_addresses) = receiver.1.recv()?;
+            total_addresses = current_addresses.count_addresses();
+            assert_ne!(total_addresses, 0);
+            index = 0;
+            request_state = RequestState::None;
+            last_update = Instant::now();
+            state.lock().await.discovered = 0;
+            println!("got new state {current_mode:?}");
+            continue;
         }
-
-        if delta > Duration::from_millis(1000) {
-            if let Some(action) = action_queue.lock().await.pop_front() {
-                match action {
-                    Action::SetMode {
-                        mode: new_mode,
-                        duration,
-                    } => {
-                        mode = new_mode;
-                        current_mode_duration = duration;
-                    }
-                    Action::Skip {} => {
-                        current_mode_duration = Duration::ZERO;
-                    }
-                    Action::Clear {} => {
-                        mode = ScanningMode::Paused {};
-                        current_mode_duration = Duration::MAX;
-                        mode_queue.lock().await.clear();
-                    }
-                    Action::Pause {} => {
-                        let remaining = current_mode_duration - delta;
-                        mode_queue.lock().await.push_front((mode, remaining));
-                        mode = ScanningMode::Paused {};
-                        current_mode_duration = Duration::MAX;
-                    }
-                    Action::Dequeue { index } => {
-                        mode_queue.lock().await.remove(index);
-                    }
-                    Action::Enqueue { mode, duration } => {
-                        mode_queue.lock().await.push_back((mode, duration));
-                    }
-                }
-            }
-        }
+        let current_addr = current_addresses.get_addr_at(index);
+        pinger.ping(current_addr).await?;
+        index += 1;
     }
+}
+
+#[derive(PartialEq)]
+enum RequestState {
+    None,
+    Requested,
 }

@@ -84,6 +84,22 @@ impl SocketAddrV4Range {
             ranges.remove(*index);
         }
     }
+
+    pub fn count_addresses(&self) -> u64 {
+        let ip_count = 1 + u32::from(*self.end.ip()) - u32::from(*self.start.ip());
+        let port_count = 1 as u64 + self.end.port() as u64 - self.start.port() as u64;
+        ip_count as u64 * port_count
+    }
+
+    pub fn random(&self, index: u64) -> SocketAddrV4 {
+        let start_port = self.start.port();
+        let start_ip = u32::from(*self.start.ip());
+
+        let port_count = 1 as u64 + self.end.port() as u64 - self.start.port() as u64;
+        let ip = (index / port_count as u64) as u32;
+        let port = (index % port_count as u64) as u16;
+        SocketAddrV4::new((start_ip + ip).into(), start_port + port)
+    }
 }
 
 impl PartialOrd for SocketAddrV4Range {
@@ -112,5 +128,30 @@ impl From<(Ipv4AddrRange, u16)> for SocketAddrV4Range {
         let (ip, port) = value;
 
         (ip, port, port).into()
+    }
+}
+
+pub trait RangesExt {
+    fn count_addresses(&self) -> u64;
+    fn get_addr_at(&self, index: u64) -> SocketAddrV4;
+}
+impl RangesExt for Vec<SocketAddrV4Range> {
+    fn count_addresses(&self) -> u64 {
+        self.iter().map(|range| range.count_addresses()).sum()
+    }
+
+    fn get_addr_at(&self, index: u64) -> SocketAddrV4 {
+        let mut cursor = 0;
+        let mut cursor_total = 0;
+        while let Some(range) = self.get(cursor) {
+            let range_size = range.count_addresses();
+            if cursor_total + range_size <= index {
+                cursor_total += range_size;
+                cursor += 1;
+                continue;
+            }
+            return range.random(index - cursor_total);
+        }
+        panic!(":(")
     }
 }

@@ -4,11 +4,13 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-tokio = { workspace = true }
 io = { workspace = true }
 database = { workspace = true }
 web = { workspace = true }
 common = { workspace = true }
 discord = { workspace = true }
 config = { workspace = true }
+scheduling = { workspace = true }
+tokio = { workspace = true }
 eyre = { workspace = true }
+parking_lot = { workspace = true }

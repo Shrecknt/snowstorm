@@ -127,12 +127,11 @@ async fn try_oauth(
     DiscordUserInfo,
     DiscordGuildMember,
 )> {
-    let config = config::get();
-    let discord_config = &config.web.oauth.discord;
+    let discord_config = &config::get().web.oauth.discord;
     let redirect_uri = discord_config.redirect_uri.to_owned();
     let client_id = discord_config.client_id.to_owned();
     let client_secret = discord_config.client_secret.to_owned();
-    let guild_id = config.bot.guild_id.to_owned();
+    let guild_id = discord_config.guild_id.to_owned();
 
     let client = BasicClient::new(
         ClientId::new(client_id.to_string()),

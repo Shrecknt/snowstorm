@@ -3579,6 +3579,8 @@ dependencies = [
  "discord",
  "eyre",
  "io",
+ "parking_lot",
+ "scheduling",
  "tokio",
  "web",
 ]

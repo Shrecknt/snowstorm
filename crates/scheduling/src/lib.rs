@@ -13,8 +13,10 @@ use sqlx::PgPool;
 use std::{
     hash::Hash,
     net::{Ipv4Addr, SocketAddrV4},
-    sync::{mpsc::Sender, Arc},
-    time::Duration,
+    sync::{
+        mpsc::{Receiver, Sender},
+        Arc,
+    },
 };
 use tokio::runtime::Runtime;
 
@@ -24,12 +26,12 @@ pub mod asn;
 pub mod constants;
 pub mod prelude;
 
-/// (usize::MAX as f64).powf(0.5) as usize
-const DEFAULT_WEIGHT: usize = 0x100000000;
+/// (usize::MAX as f64).powf(0.5) as u64
+const DEFAULT_WEIGHT: u64 = 0x100000000;
 
 #[derive(Debug)]
 pub struct ModePicker {
-    pub modes: DashMap<ScanningMode, usize>,
+    pub modes: DashMap<ScanningMode, u64>,
 }
 
 impl ModePicker {
@@ -50,7 +52,7 @@ impl ModePicker {
         Self { modes }
     }
 
-    pub fn set(&mut self, variant: ScanningMode, count: usize) {
+    pub fn set(&mut self, variant: ScanningMode, count: u64) {
         if let Some(mut value) = self.modes.get_mut(&variant) {
             *value = count;
         } else {
@@ -58,7 +60,7 @@ impl ModePicker {
         }
     }
 
-    pub fn update(&mut self, variant: ScanningMode, count: usize) {
+    pub fn update(&mut self, variant: ScanningMode, count: u64) {
         if let Some(mut value) = self.modes.get_mut(&variant) {
             if *value == 0 || *value == DEFAULT_WEIGHT {
                 *value = count;
@@ -285,16 +287,23 @@ impl ScanningMode {
 }
 
 pub fn start_scheduler_queue(
-    sender: Sender<Vec<SocketAddrV4Range>>,
-    interval: Duration,
+    sender: Sender<(ScanningMode, Vec<SocketAddrV4Range>)>,
+    receiver: Receiver<Option<(ScanningMode, u64)>>,
     modes: Arc<parking_lot::Mutex<ModePicker>>,
+    pool: PgPool,
 ) {
     std::thread::spawn(move || {
         Runtime::new().unwrap().block_on(async move {
-            loop {
-                let _ = sender.send(Vec::new());
-                let _new_mode = modes.lock().pick_random();
-                tokio::time::sleep(interval).await;
+            while let Ok(last_scan_results) = receiver.recv() {
+                let new_mode = {
+                    let mut modes_lock = modes.lock();
+                    if let Some((mode, count)) = last_scan_results {
+                        modes_lock.update(mode, count);
+                    }
+                    modes_lock.pick_random()
+                };
+                let addresses = new_mode.get_addresses(&pool).await.unwrap();
+                sender.send((new_mode, addresses)).unwrap();
             }
         });
     });

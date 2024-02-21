@@ -28,6 +28,8 @@ secret = "some random key"
 enabled = true
 interface_name = "eth0"
 task_size_sanity_limit = 1000000
+mode_duration = 300
+push_to_db = true
 
 [bot]
 token = "abcdefghijklmnopqrstuvwxyz.abcdef.ghijklmnopqrstuvwxyzabcdefghijklmnopqr"

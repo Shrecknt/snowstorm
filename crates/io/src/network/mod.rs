@@ -17,7 +17,7 @@ use bytes::BytesMut;
 use database::{player::PlayerInfo, server::PingResult};
 use std::{
     io::Cursor,
-    net::{Ipv4Addr, SocketAddr},
+    net::SocketAddrV4,
     sync::{mpsc::Sender, Arc},
 };
 use tokio::{net::TcpStream, sync::Mutex};
@@ -28,8 +28,8 @@ pub struct NetworkScanner {
 }
 
 impl Io for NetworkScanner {
-    async fn ping(&mut self, addr: Ipv4Addr, port: u16) -> Result<(), eyre::Report> {
-        let socket = TcpStream::connect(SocketAddr::new(addr.into(), port)).await?;
+    async fn ping(&mut self, addr: SocketAddrV4) -> Result<(), eyre::Report> {
+        let socket = TcpStream::connect(addr).await?;
         socket.set_nodelay(true)?;
         let (socket_r, mut socket_w) = socket.into_split();
 
@@ -57,7 +57,7 @@ impl Io for NetworkScanner {
         ));
 
         if let Ok(ClientboundStatusPacket::StatusResponse(ping_response)) = clientbound_status {
-            let ping_result = PingResult::from_azalea(addr, port, &ping_response);
+            let ping_result = PingResult::from_azalea(*addr.ip(), addr.port(), &ping_response);
             let player_info = PlayerInfo::from_azalea(&ping_response);
             self.sender.send((ping_result, player_info))?;
         };
@@ -65,7 +65,7 @@ impl Io for NetworkScanner {
         Ok(())
     }
 
-    async fn legacy_ping(&mut self, _addr: Ipv4Addr, _port: u16) -> Result<(), eyre::Report> {
+    async fn legacy_ping(&mut self, _addr: SocketAddrV4) -> Result<(), eyre::Report> {
         todo!()
     }
 }

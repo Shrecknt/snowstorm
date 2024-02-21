@@ -64,7 +64,10 @@ pub struct ScannerConfig {
     #[default = false]
     pub enabled: bool,
     pub interface_name: String,
-    pub task_size_sanity_limit: usize,
+    pub task_size_sanity_limit: u64,
+    pub mode_duration: u64,
+    #[serde(default = "_true")]
+    pub push_to_db: bool,
 }
 
 #[derive(Deserialize, SmartDefault)]
@@ -94,6 +97,7 @@ pub struct OauthDiscordConfig {
     pub redirect_uri: String,
     pub client_id: String,
     pub client_secret: String,
+    pub guild_id: String,
 }
 
 #[derive(Deserialize, SmartDefault)]
