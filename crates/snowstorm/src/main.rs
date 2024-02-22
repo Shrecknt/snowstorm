@@ -119,10 +119,8 @@ async fn ping_loop(
                     if duration_since_last_update
                         > Duration::from_secs(config.scanner.mode_duration)
                     {
-                        let discovered = state.lock().await.discovered
-                            * config.scanner.mode_duration
-                            / duration_since_last_update.as_secs().max(1);
-                        println!("discovered {discovered} servers (extrapolated to duration)");
+                        let discovered = state.lock().await.discovered;
+                        println!("discovered {discovered} servers");
                         requester.0.send(Some((current_mode, discovered)))?;
                         request_state = RequestState::Requested;
                         println!("requesting new state");
@@ -134,6 +132,7 @@ async fn ping_loop(
                         (current_mode, current_addresses) = new_state;
                         total_addresses = current_addresses.count_addresses();
                         assert_ne!(total_addresses, 0);
+                        println!("total addresses = {total_addresses}");
                         index = 0;
                         request_state = RequestState::None;
                         last_update = Instant::now();
@@ -154,6 +153,7 @@ async fn ping_loop(
             (current_mode, current_addresses) = receiver.1.recv()?;
             total_addresses = current_addresses.count_addresses();
             assert_ne!(total_addresses, 0);
+            println!("total addresses = {total_addresses}");
             index = 0;
             request_state = RequestState::None;
             last_update = Instant::now();

@@ -25,9 +25,6 @@ Other versions of some of the listed programs will probably work but it is not r
 
 Create a postgres database using the [postgres setup script](postgres_setup.sql)
 
-I was too lazy to figure out how environment variables work with svelte, so you are going to have to manually change some stuff in the webui. Try searching for all instances of 'shrecked.dev' in the
-`web/` directory and replace that with whatever works best for you.
-
 ```sh
 git clone https://git.shrecked.dev/Shrecknt/snowstorm.git
 cd snowstorm

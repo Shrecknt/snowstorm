@@ -1,9 +1,14 @@
 <script>
+	import { config } from '$lib/config';
+
 	export let title = 'title';
 	export let description = 'description';
 </script>
 
 <svelte:head>
+	<meta property="og:image" content="https://{config.web.domain}/logo.png" />
+	<meta property="og:url" content="https://{config.web.domain}/" />
+
 	<style>
 		.forgejo-icon {
 			display: inline-block;
