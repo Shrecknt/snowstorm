@@ -64,6 +64,8 @@ pub struct ScannerConfig {
     #[default = false]
     pub enabled: bool,
     pub interface_name: String,
+    #[serde(default = "default_source_port")]
+    pub source_port: u16,
     pub task_size_sanity_limit: u64,
     pub mode_duration: u64,
     #[serde(default = "_true")]
@@ -113,6 +115,9 @@ pub struct OauthForgejoConfig {
     pub user_api_uri: String,
 }
 
-fn _true() -> bool {
+const fn _true() -> bool {
     true
+}
+const fn default_source_port() -> u16 {
+    61000
 }

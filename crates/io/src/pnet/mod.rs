@@ -27,7 +27,7 @@ impl PnetScanner {
         state: Arc<Mutex<ScannerState>>,
         sender: Sender<(PingResult, Vec<PlayerInfo>)>,
     ) -> Self {
-        let source_port = SourcePort::Number(61000);
+        let source_port = SourcePort::Number(config::get().scanner.source_port);
         let socket = StatelessTcp::new(source_port);
         let syn_writer = socket.write.clone();
         tokio::spawn(async move { receive::start_server(socket, sender).await });

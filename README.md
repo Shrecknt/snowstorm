@@ -33,5 +33,6 @@ nano Snowstorm.toml # modify Snowstorm.toml to your liking
 cd web
 npm run build
 cd ..
+iptables -A INPUT -p tcp --dport 61000 -j DROP # prevent os from closing the connections
 cargo r -r --bin snowstorm
 ```

@@ -27,6 +27,7 @@ secret = "some random key"
 [scanner]
 enabled = true
 interface_name = "eth0"
+source_port = 61000
 task_size_sanity_limit = 1000000
 mode_duration = 300
 push_to_db = true
