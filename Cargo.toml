@@ -4,6 +4,7 @@ members = ["crates/*"]
 
 [workspace.dependencies]
 snowstorm = { version = "0.1.0", path = "crates/snowstorm" }
+bunger = { version = "0.1.0", path = "crates/bunger" }
 database = { version = "0.1.0", path = "crates/database" }
 common = { version = "0.1.0", path = "crates/common" }
 io = { version = "0.1.0", path = "crates/io" }
@@ -58,3 +59,4 @@ chrono = "0.4.34"
 pretty-duration = "0.1.1"
 toml = "0.8.10"
 smart-default = "0.7.1"
+flate2 = { version = "1.0.17", features = ["zlib"], default-features = false }

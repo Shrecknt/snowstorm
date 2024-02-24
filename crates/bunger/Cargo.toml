@@ -1,0 +1,12 @@
+[package]
+name = "bunger"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+config = { workspace = true }
+flate2 = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tokio = { workspace = true }
+eyre = { workspace = true }
