@@ -3,9 +3,9 @@
 use std::sync::LazyLock;
 use uuid::Uuid;
 
-pub const MOWOJANG_API_URL: &str = "https://mowojang.matdoes.dev/";
-pub static INTERNAL_API_URL: LazyLock<Option<String>> =
-    LazyLock::new(|| std::env::var("MOWOJANG_INTERNAL_API_URL").ok());
+pub const MOWOJANG_API_URI: &str = "https://mowojang.matdoes.dev/";
+pub static INTERNAL_API_URI: LazyLock<Option<String>> =
+    LazyLock::new(|| config::get().mowojang.internal_api_uri.clone());
 
 #[derive(Debug, PartialEq, Clone, serde::Deserialize)]
 pub struct MowojangApiResponse {
@@ -41,12 +41,12 @@ pub async fn check_username(username: &str) -> Option<MowojangApiResponse> {
     if !valid_java_username(username) {
         return None;
     };
-    if let Some(url) = &*INTERNAL_API_URL {
+    if let Some(url) = &*INTERNAL_API_URI {
         if let Some(res) = api_internal(url, username).await {
             return Some(res);
         }
     }
-    api_internal(MOWOJANG_API_URL, username).await
+    api_internal(MOWOJANG_API_URI, username).await
 }
 
 pub async fn check_uuid<T>(uuid: T) -> Option<MowojangApiResponse>
@@ -54,12 +54,12 @@ where
     Uuid: From<T>,
 {
     let uuid = Uuid::from(uuid);
-    if let Some(url) = &*INTERNAL_API_URL {
+    if let Some(url) = &*INTERNAL_API_URI {
         if let Some(res) = api_internal(url, uuid).await {
             return Some(res);
         }
     }
-    api_internal(MOWOJANG_API_URL, uuid).await
+    api_internal(MOWOJANG_API_URI, uuid).await
 }
 
 async fn api_internal<T: ToString>(url: &str, query: T) -> Option<MowojangApiResponse> {

@@ -26,6 +26,9 @@ pub struct Config {
 
     #[serde(default)]
     pub bot: BotConfig,
+
+    #[serde(default)]
+    pub mowojang: MowojangConfig,
 }
 
 impl Config {
@@ -80,6 +83,11 @@ pub struct BotConfig {
     pub token: String,
     pub bot_id: String,
     pub guild_id: String,
+}
+
+#[derive(Deserialize, SmartDefault)]
+pub struct MowojangConfig {
+    pub internal_api_uri: Option<String>,
 }
 
 #[derive(Deserialize, SmartDefault)]
