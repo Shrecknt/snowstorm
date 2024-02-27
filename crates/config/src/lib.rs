@@ -29,6 +29,9 @@ pub struct Config {
 
     #[serde(default)]
     pub mowojang: MowojangConfig,
+
+    #[serde(default)]
+    pub ram_server: RamServerConfig,
 }
 
 impl Config {
@@ -88,6 +91,15 @@ pub struct BotConfig {
 #[derive(Deserialize, SmartDefault)]
 pub struct MowojangConfig {
     pub internal_api_uri: Option<String>,
+}
+
+#[derive(Deserialize, SmartDefault)]
+pub struct RamServerConfig {
+    pub java_8_path: PathBuf,
+    pub java_11_path: PathBuf,
+    pub java_17_path: PathBuf,
+    pub server_jar_path: PathBuf,
+    pub temp_fs_path: PathBuf,
 }
 
 #[derive(Deserialize, SmartDefault)]

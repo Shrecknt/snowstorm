@@ -3,16 +3,18 @@ resolver = "2"
 members = ["crates/*"]
 
 [workspace.dependencies]
-snowstorm = { version = "0.1.0", path = "crates/snowstorm" }
 bunger = { version = "0.1.0", path = "crates/bunger" }
-database = { version = "0.1.0", path = "crates/database" }
 common = { version = "0.1.0", path = "crates/common" }
+config = { version = "0.1.0", path = "crates/config" }
+database = { version = "0.1.0", path = "crates/database" }
+discord = { version = "0.1.0", path = "crates/discord" }
 io = { version = "0.1.0", path = "crates/io" }
 jwt = { version = "0.1.0", path = "crates/jwt" }
-web = { version = "0.1.0", path = "crates/web" }
+mowojang = { version = "0.1.0", path = "crates/mowojang" }
+ram_server = { version = "0.1.0", path = "crates/ram_server" }
 scheduling = { version = "0.1.0", path = "crates/scheduling" }
-discord = { version = "0.1.0", path = "crates/discord" }
-config = { version = "0.1.0", path = "crates/config" }
+snowstorm = { version = "0.1.0", path = "crates/snowstorm" }
+web = { version = "0.1.0", path = "crates/web" }
 axum = { version = "0.6.20", features = ["macros", "ws", "headers"] }
 bcrypt = "0.15.0"
 boringtun = "0.6.0"
@@ -60,3 +62,4 @@ pretty-duration = "0.1.1"
 toml = "0.8.10"
 smart-default = "0.7.1"
 flate2 = { version = "1.0.17", features = ["zlib"], default-features = false }
+semver = "1.0.22"
