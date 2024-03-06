@@ -1218,6 +1218,7 @@ dependencies = [
  "azalea-protocol",
  "config",
  "eyre",
+ "mowojang",
  "serde",
  "serde_json",
  "sqlx",

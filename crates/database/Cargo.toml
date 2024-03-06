@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 config = { workspace = true }
+mowojang = { workspace = true }
 sqlx = { workspace = true }
 eyre = { workspace = true }
 uuid = { workspace = true }

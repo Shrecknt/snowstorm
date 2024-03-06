@@ -116,7 +116,7 @@ pub async fn start_server(mut socket: StatelessTcp, sender: Sender<(PingResult, 
                         };
                     let ping_result =
                         PingResult::from_azalea(ip.source, tcp.source, &ping_response);
-                    let player_info = PlayerInfo::from_azalea(&ping_response);
+                    let player_info = PlayerInfo::from_azalea(&ping_response).await;
                     let _ = sender.send((ping_result, player_info));
                     awaiting_data_map.remove(&source_addr);
                 }

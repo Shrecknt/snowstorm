@@ -21,10 +21,9 @@ pub trait DbPush {
 impl DbPush for (PingResult, Vec<PlayerInfo>) {
     async fn push(&mut self, pool: &sqlx::PgPool) -> Result<(), eyre::Report> {
         self.0.push(pool).await?;
-        let id = self.0.id;
+        let id = self.0.id.unwrap();
         for player in &mut self.1 {
-            player.server = id;
-            player.push(pool).await?;
+            player.push(id, pool).await?;
         }
         Ok(())
     }

@@ -82,7 +82,7 @@ impl PingResult {
     pub async fn from_player_id(player_id: i64, pool: &PgPool) -> Vec<Self> {
         const QUERY_STRING: &str = "
         WITH joins AS (
-            SELECT server_id FROM join_table WHERE player_id = $1::BIGINT
+            SELECT server_id FROM join_servers_players WHERE player_id = $1::BIGINT
         ) SELECT * FROM servers WHERE id IN (SELECT server_id FROM joins);
         ";
         sqlx::query_as(QUERY_STRING)

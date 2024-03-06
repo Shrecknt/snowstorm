@@ -42,8 +42,8 @@ CREATE TABLE IF NOT EXISTS players (
 	id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
 	uuid UUID NOT NULL,
 	username TEXT NOT NULL,
-    java_account BOOLEAN NOT NULL,
-    bedrock_account BOOLEAN NOT NULL,
+    java_account BOOLEAN,
+    bedrock_account BOOLEAN,
 	UNIQUE (uuid, username)
 );
 
