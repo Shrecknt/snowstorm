@@ -8,6 +8,7 @@ pub mod discord_user;
 pub mod forgejo_user;
 pub mod player;
 pub mod server;
+pub mod server_joins;
 pub mod user;
 
 pub trait DbPush {

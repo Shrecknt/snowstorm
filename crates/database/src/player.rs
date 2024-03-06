@@ -92,7 +92,7 @@ impl DbPush for PlayerInfo {
         let new_id: i64 = sqlx::query(QUERY)
             .bind(self.id)
             .bind(self.uuid)
-            .bind(self.username.clone())
+            .bind(&self.username)
             .fetch_one(pool)
             .await?
             .get("id");

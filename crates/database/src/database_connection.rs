@@ -1,7 +1,7 @@
 use sqlx::{postgres::PgPoolOptions, PgPool, Row};
-use std::net::Ipv4Addr;
+use std::net::{Ipv4Addr, SocketAddrV4};
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct DatabaseConnection {
     pub pool: PgPool,
 }
@@ -15,18 +15,18 @@ impl DatabaseConnection {
         Ok(Self { pool })
     }
 
-    pub async fn get_rescan(&self) -> eyre::Result<Vec<(Ipv4Addr, u16)>> {
-        let res = sqlx::query("SELECT id FROM servers")
+    pub async fn get_rescan(&self) -> eyre::Result<Vec<SocketAddrV4>> {
+        let res = sqlx::query("SELECT ip, port FROM servers")
             .fetch_all(&self.pool)
             .await?;
-        Ok(res.iter().map(|id| from_id(id.get("id"))).collect())
+        Ok(res
+            .iter()
+            .map(|id| {
+                SocketAddrV4::new(
+                    Ipv4Addr::from(id.get::<i32, _>("ip") as u32),
+                    id.get::<i16, _>("port") as u16,
+                )
+            })
+            .collect())
     }
-}
-
-pub fn to_id(ip: Ipv4Addr, port: u16) -> i64 {
-    (u32::from(ip) as i64) << 16 | (port as i64)
-}
-
-pub fn from_id(id: i64) -> (Ipv4Addr, u16) {
-    (Ipv4Addr::from((id >> 16) as u32), (id & 0xFFFF) as u16)
 }

@@ -15,9 +15,12 @@ pub struct PingResult {
     pub version_protocol: Option<i32>,
     pub max_players: Option<i32>,
     pub online_players: Option<i32>,
+    pub online_anonymous_players: Option<i32>,
     pub description: Option<String>,
+    pub description_plain: Option<String>,
     pub enforces_secure_chat: Option<bool>,
     pub previews_chat: Option<bool>,
+    pub geyser: Option<bool>,
     // timestamps
     pub discovered: i64,
     pub last_seen: i64,
@@ -45,9 +48,12 @@ impl PingResult {
             version_protocol: None,
             max_players: None,
             online_players: None,
+            online_anonymous_players: None,
             description: None,
+            description_plain: None,
             enforces_secure_chat: None,
             previews_chat: None,
+            geyser: None,
             discovered: 0,
             last_seen: 0,
         }
@@ -62,9 +68,12 @@ impl PingResult {
             version_protocol: Some(value.version.protocol),
             max_players: Some(value.players.max),
             online_players: Some(value.players.online),
+            online_anonymous_players: None,
             description: Some(value.description.to_string()),
+            description_plain: None,
             enforces_secure_chat: value.enforces_secure_chat,
             previews_chat: None,
+            geyser: None,
             discovered: 0,
             last_seen: 0,
         }
@@ -116,9 +125,12 @@ impl DbPush for PingResult {
                     version_protocol,
                     max_players,
                     online_players,
+                    online_anonymous_players,
                     description,
+                    description_plain,
                     enforces_secure_chat,
-                    previews_chat
+                    previews_chat,
+                    geyser
                 ) VALUES (
                     $2::INT,
                     $3::SMALLINT,
@@ -126,30 +138,39 @@ impl DbPush for PingResult {
                     $5::INT,
                     $6::INT,
                     $7::INT,
-                    $8::TEXT,
-                    $9::BOOLEAN,
-                    $10::BOOLEAN
+                    $8::INT,
+                    $9::TEXT,
+                    $10::TEXT,
+                    $11::BOOLEAN,
+                    $12::BOOLEAN,
+                    $13::BOOLEAN
                 ) ON CONFLICT (ip, port) DO UPDATE SET
                     version_name = excluded.version_name,
                     version_protocol = excluded.version_protocol,
                     max_players = excluded.max_players,
-                    online_players = excluded.max_players,
+                    online_players = excluded.online_players,
+                    online_anonymous_players = excluded.online_anonymous_players,
                     description = excluded.description,
+                    description_plain = excluded.description_plain,
                     enforces_secure_chat = excluded.enforces_secure_chat,
                     previews_chat = excluded.previews_chat,
-                    last_seen = excluded.last_seen
+                    geyser = excluded.geyser,
+                    last_seen = EXTRACT(epoch from now())
                 RETURNING id";
         let new_id: i64 = sqlx::query(query)
             .bind(self.id)
             .bind(self.ip)
             .bind(self.port)
-            .bind(self.version_name.clone())
+            .bind(self.version_name.as_ref())
             .bind(self.version_protocol)
             .bind(self.max_players)
             .bind(self.online_players)
-            .bind(self.description.clone())
+            .bind(self.online_anonymous_players)
+            .bind(self.description.as_ref())
+            .bind(self.description_plain.as_ref())
             .bind(self.enforces_secure_chat)
             .bind(self.previews_chat)
+            .bind(self.geyser)
             .fetch_one(pool)
             .await?
             .get("id");

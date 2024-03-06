@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS server_joins (
     whitelist BOOLEAN,
     bunger BOOLEAN,
     kick_message TEXT,
-    honeypot BIT(8),
+    honeypot BIT(8) NOT NULL DEFAULT B'00000000',
 	first_joined BIGINT NOT NULL DEFAULT EXTRACT(epoch from now()),
 	last_joined BIGINT NOT NULL DEFAULT EXTRACT(epoch from now()),
     CONSTRAINT fk_server
