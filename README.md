@@ -11,6 +11,7 @@ Scan the entire ipv4 address space for Minecraft servers, with dynamic scanning 
 > **Important**
 > - The scanner is currently very early in development and is missing many features
 > - The scanner's adaptive scanning capabilities rely on already having some data to expand upon. If you do not already have a small number of servers in your database, the scanner will likely crash.
+> - The scanner currently drops all data instead of pushing it to the database while I'm working on refactoring the database.
 
 ## Prerequisites
 
