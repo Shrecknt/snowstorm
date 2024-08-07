@@ -1,5 +1,3 @@
-#![feature(lazy_cell)]
-
 use std::sync::LazyLock;
 use uuid::Uuid;
 

@@ -1,3 +1,4 @@
+use database::server_joins::JoinResult;
 use flate2::read::ZlibDecoder;
 use std::{
     io::{Cursor, Read},
@@ -12,19 +13,8 @@ use varint::{AsyncVarint, SyncVarintWrite};
 
 pub mod varint;
 
-#[derive(Debug, Default)]
-pub struct JoinData {
-    pub error: Option<String>,
-}
-
-impl JoinData {
-    pub fn new() -> Self {
-        Self::default()
-    }
-}
-
-pub async fn join(addr: SocketAddrV4, version: i32) -> JoinData {
-    let mut join_data = JoinData::new();
+pub async fn join(addr: SocketAddrV4, version: i32, server_id: i64) -> JoinResult {
+    let mut join_data = JoinResult::none(server_id);
 
     let res = join_internal(addr, version, &mut join_data).await;
     if let Err(err) = res {
@@ -37,9 +27,10 @@ pub async fn join(addr: SocketAddrV4, version: i32) -> JoinData {
 async fn join_internal(
     addr: SocketAddrV4,
     version: i32,
-    join_data: &mut JoinData,
+    _join_data: &mut JoinResult,
 ) -> eyre::Result<()> {
     let mut stream = TcpStream::connect(addr).await?;
+    let compression = &mut None;
 
     let mut packet = Vec::new();
     packet.write_varint(0x00)?;
@@ -49,7 +40,7 @@ async fn join_internal(
     packet.write_all(addr).await?;
     packet.write_u16(42069).await?;
     packet.write_varint(2)?;
-    write_packet(&mut stream, &packet, false).await?;
+    write_packet(&mut stream, &packet, compression).await?;
 
     let mut packet = Vec::new();
     packet.write_varint(0x00)?;
@@ -61,9 +52,9 @@ async fn join_internal(
         let player_uuid = uuid!("36d4d63f-7268-4879-a57f-122e9df006c2").as_bytes();
         packet.write_all(player_uuid).await?;
     }
-    write_packet(&mut stream, &packet, false).await?;
+    write_packet(&mut stream, &packet, compression).await?;
 
-    let packet = read_packet(&mut stream, false).await?;
+    let packet = read_packet(&mut stream, compression).await?;
     println!("got packet = {packet:?}");
     match packet.0 {
         0 => {
@@ -83,10 +74,14 @@ async fn join_internal(
     Ok(())
 }
 
-async fn write_packet(stream: &mut TcpStream, packet: &[u8], compressed: bool) -> eyre::Result<()> {
+async fn write_packet(
+    stream: &mut TcpStream,
+    packet: &[u8],
+    compression: &mut Option<i32>,
+) -> eyre::Result<()> {
     let mut to_send = Vec::new();
 
-    if compressed {
+    if let Some(_compression) = compression {
         todo!()
     } else {
         to_send.write_varint(packet.len() as i32)?;
@@ -99,12 +94,15 @@ async fn write_packet(stream: &mut TcpStream, packet: &[u8], compressed: bool) -
     Ok(())
 }
 
-async fn read_packet(stream: &mut TcpStream, compressed: bool) -> eyre::Result<(i32, Vec<u8>)> {
+async fn read_packet(
+    stream: &mut TcpStream,
+    compression: &mut Option<i32>,
+) -> eyre::Result<(i32, Vec<u8>)> {
     println!("a");
     let packet_length = stream.read_varint().await?;
 
-    if compressed {
-        let (data_length_size, data_length) = stream.read_varint_len().await?;
+    if let Some(_compression) = compression {
+        let (_data_length_size, data_length) = stream.read_varint_len().await?;
         if data_length != 0 {
             let mut buf = Vec::with_capacity(data_length as usize);
             stream.read_exact(&mut buf).await?;

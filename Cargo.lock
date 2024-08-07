@@ -850,6 +850,7 @@ name = "bunger"
 version = "0.1.0"
 dependencies = [
  "config",
+ "database",
  "eyre",
  "flate2",
  "ram_server",

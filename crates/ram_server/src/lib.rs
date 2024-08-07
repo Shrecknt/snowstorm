@@ -68,6 +68,6 @@ pub fn run_server(version: impl ToString, port: u16, online_mode: bool) -> Optio
 
 fn run_setup() {
     let path = &config::get().ram_server.temp_fs_path;
-    fs::remove_dir_all(path).expect("Unable to delete old temp dir");
+    let _ = fs::remove_dir_all(path);
     fs::create_dir(path).expect("Unable to create temp dir");
 }

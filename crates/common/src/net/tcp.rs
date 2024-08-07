@@ -81,7 +81,6 @@ pub struct StatelessTcpWriteHalf {
 
     mtu: usize,
 
-    #[cfg(not(feature = "benchmark"))]
     socket: RawSocket,
 
     pub fingerprint: Fingerprint,
@@ -94,7 +93,6 @@ pub struct StatelessTcpReadHalf {
     source_port: SourcePort,
 
     // tx: Box<dyn DataLinkSender>,
-    #[cfg(not(feature = "benchmark"))]
     rx: Box<dyn DataLinkReceiver>,
 }
 
@@ -115,7 +113,6 @@ impl StatelessTcp {
         };
 
         // Create a channel to receive on
-        #[cfg(not(feature = "benchmark"))]
         let (_tx, rx) = match datalink::channel(
             &interface,
             Config {
@@ -135,14 +132,10 @@ impl StatelessTcp {
             IpAddr::V6(_) => panic!("ipv6 not supported"),
         };
 
-        #[cfg(not(feature = "benchmark"))]
         let mut socket = RawSocket::new(&interface.name).unwrap();
 
         let interface_mac = interface.mac;
 
-        #[cfg(feature = "benchmark")]
-        let mut mtu = 1000; // idk
-        #[cfg(not(feature = "benchmark"))]
         let mut mtu = socket.interface_mtu().unwrap();
         if interface_mac.is_some() {
             mtu += ETH_HEADER_LEN;
@@ -158,7 +151,6 @@ impl StatelessTcp {
             interface_mac,
             mtu,
 
-            #[cfg(not(feature = "benchmark"))]
             socket,
 
             template_syn_packet: TemplatePacket::new(TemplatePacketRepr {
@@ -183,7 +175,6 @@ impl StatelessTcp {
             read: StatelessTcpReadHalf {
                 source_port,
                 interface_mac,
-                #[cfg(not(feature = "benchmark"))]
                 rx,
             },
             write: write_half,
@@ -213,7 +204,6 @@ impl StatelessTcpWriteHalf {
             source_port,
         });
 
-        #[cfg(not(feature = "benchmark"))]
         self.socket.send_blocking(packet);
     }
 
@@ -305,7 +295,6 @@ impl StatelessTcpWriteHalf {
     pub fn send_tcp(&mut self, repr: PacketRepr) {
         let source_addr = SocketAddrV4::new(self.source_ip, repr.source_port);
         let packet = build_tcp_packet(repr, self.gateway_mac, self.interface_mac, source_addr);
-        #[cfg(not(feature = "benchmark"))]
         self.socket.send_blocking(&packet);
     }
 }
@@ -339,7 +328,6 @@ fn build_tcp_packet(
 
 impl StatelessTcpReadHalf {
     pub fn recv(&mut self) -> Option<(Ipv4, Tcp)> {
-        #[cfg(not(feature = "benchmark"))]
         loop {
             match self.rx.next() {
                 Ok(packet) => {
@@ -362,8 +350,6 @@ impl StatelessTcpReadHalf {
                 Err(_) => return None,
             }
         }
-        #[cfg(feature = "benchmark")]
-        None
     }
 }
 
@@ -401,7 +387,7 @@ fn process_ipv4(ipv4: &Ipv4Packet) -> Option<Tcp> {
             }
         }
         IpNextHeaderProtocols::IpComp => {
-            warn!("Recieved an IpComp packet, but it's not supported.");
+            warn!("Received an IpComp packet, but it's not supported.");
             None
         }
         _ => None,

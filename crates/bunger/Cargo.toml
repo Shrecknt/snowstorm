@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 config = { workspace = true }
+database = { workspace = true }
 ram_server = { workspace = true }
 flate2 = { workspace = true }
 serde = { workspace = true }

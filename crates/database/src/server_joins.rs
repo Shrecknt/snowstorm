@@ -15,12 +15,28 @@ pub struct JoinResult {
     pub bunger: Option<bool>,
     pub kick_message: Option<String>,
     pub honeypot: i8,
+    pub error: Option<String>,
     // timestamps
     pub first_joined: i64,
     pub last_joined: i64,
 }
 
 impl JoinResult {
+    pub fn none(server_id: i64) -> Self {
+        Self {
+            id: None,
+            server_id,
+            online_mode: None,
+            whitelist: None,
+            bunger: None,
+            kick_message: None,
+            honeypot: 0b00000000,
+            error: None,
+            first_joined: 0,
+            last_joined: 0,
+        }
+    }
+
     #[inline]
     pub fn is_honeypot(&self) -> bool {
         self.honeypot != 0
@@ -61,20 +77,23 @@ impl DbPush for JoinResult {
                     whitelist,
                     bunger,
                     kick_message,
-                    honeypot
+                    honeypot,
+                    error
                 ) VALUES (
                     $2::BIGINT,
                     $3::BOOLEAN,
                     $4::BOOLEAN,
                     $5::BOOLEAN,
                     $6::TEXT,
-                    $7::BIT(8)
+                    $7::BIT(8),
+                    $8::TEXT
                 ) ON CONFLICT (server_id) DO UPDATE SET
                     online_mode = excluded.online_mode,
                     whitelist = excluded.whitelist,
                     bunger = excluded.bunger,
                     kick_message = excluded.kick_message,
                     honeypot = excluded.honeypot,
+                    error = excluded.error,
                     last_joined = EXTRACT(epoch from now())
                 RETURNING id";
         let new_id: i64 = sqlx::query(query)
@@ -85,6 +104,7 @@ impl DbPush for JoinResult {
             .bind(self.bunger)
             .bind(self.kick_message.as_ref())
             .bind(self.honeypot)
+            .bind(self.error.as_ref())
             .fetch_one(pool)
             .await?
             .get("id");

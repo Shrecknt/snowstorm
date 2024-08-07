@@ -1,5 +1,3 @@
-#![feature(lazy_cell)]
-
 use serde::Deserialize;
 use smart_default::SmartDefault;
 use std::{

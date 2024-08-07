@@ -103,7 +103,7 @@ impl PlayerInfo {
                 uuid,
                 username,
                 java_account,
-                bedrock_account,
+                bedrock_account
             ) VALUES (
                 $2::UUID,
                 $3::TEXT,
@@ -111,8 +111,8 @@ impl PlayerInfo {
                 $5::BOOLEAN
             )
             ON CONFLICT (uuid, username) DO UPDATE SET
-                java_account = excluded.java_account,
-                bedrock_account = excluded.bedrock_account
+                java_account = coalesce(players.java_account, false) OR excluded.java_account,
+                bedrock_account = coalesce(players.bedrock_account, false) OR excluded.bedrock_account
             RETURNING id";
         let new_id: i64 = sqlx::query(QUERY)
             .bind(self.id)

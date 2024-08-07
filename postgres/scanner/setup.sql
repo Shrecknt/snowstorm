@@ -13,9 +13,10 @@ CREATE TABLE IF NOT EXISTS servers (
     online_players INT,
     online_anonymous_players INT,
     description TEXT,
-    description_plain TEXT,
+    description_plain TEXT, -- description without formatting
     enforces_secure_chat BOOLEAN,
     previews_chat BOOLEAN,
+    ping INT, -- two way ping
     geyser BOOLEAN,
 	discovered BIGINT NOT NULL DEFAULT EXTRACT(epoch from now()),
 	last_seen BIGINT NOT NULL DEFAULT EXTRACT(epoch from now()),
@@ -30,7 +31,8 @@ CREATE TABLE IF NOT EXISTS server_joins (
     whitelist BOOLEAN,
     bunger BOOLEAN,
     kick_message TEXT,
-    honeypot BIT(8) NOT NULL DEFAULT B'00000000',
+    flags BIT(8) NOT NULL DEFAULT B'00000000',
+    error TEXT,
 	first_joined BIGINT NOT NULL DEFAULT EXTRACT(epoch from now()),
 	last_joined BIGINT NOT NULL DEFAULT EXTRACT(epoch from now()),
     CONSTRAINT fk_server
